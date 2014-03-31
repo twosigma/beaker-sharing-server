@@ -23,6 +23,8 @@
 
 This is a fork of https://github.com/ipython/nbviewer
 
+Original README follows:
+
 IPython Notebook Viewer
 -----------------------
 
