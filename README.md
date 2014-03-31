@@ -1,3 +1,28 @@
+<!--
+    Copyright 2014 TWO SIGMA INVESTMENTS, LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+ 
+#Notices
+
+* As long as this repo is 'private', do not share code or builds with anybody outside of Two Sigma
+* Two Sigma employees must complete the appropriate authorization forms in Bonita before contributing to any open source project, including Beaker
+
+#Povenance
+
+This is a fork of https://github.com/ipython/nbviewer
+
 IPython Notebook Viewer
 -----------------------
 
@@ -74,4 +99,3 @@ $ python -m nbviewer --debug --no-cache
 
 This will automatically relaunch the server is a change is detected on a python file, and not cache any result.
 You can then just do the modification you like to the source code and/or the templates then refresh the pages.
-
