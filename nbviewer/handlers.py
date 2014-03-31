@@ -364,6 +364,7 @@ class RenderingHandler(BaseHandler):
         
         msg is extra information for the log message when rendering fails.
         """
+        app_log.debug("finish_notebook begin")
         if msg is None:
             msg = download_url
         try:
@@ -381,7 +382,7 @@ class RenderingHandler(BaseHandler):
         else:
             app_log.debug("Finished render of %s", download_url)
         
-        html = self.render_template('notebook.html',
+        html = self.render_template('beaker_notebook.html',
             body=nbhtml,
             download_url=download_url,
             home_url=home_url,
