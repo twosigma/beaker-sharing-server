@@ -1,0 +1,353 @@
+/*
+ *  Copyright 2014 TWO SIGMA INVESTMENTS, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+root {
+    display: block;
+}
+
+body {
+    margin: 10px;
+}
+
+@media (max-width: 979px) {
+    body {
+        padding-top: 0px;
+    }
+}
+
+.bkcell {
+    padding-right: 8px;
+    padding-top: 5px;
+    margin-bottom: 10px;
+    border-right: 1px solid #999999;
+}
+
+.cell-bracket-initialization {
+    border-right: 2px solid #00FF00;
+}
+
+.cell-bracket-selected {
+    border-right: 2px solid #009AA6;
+    box-shadow: 5px 0 10px -5px #009AA6;
+}
+
+.bk-hr {
+    border: 0;
+    height: 10px;
+    color: #009AA6;
+    background-color: #009AA6;
+    opacity: 0.0;
+    box-shadow: inset 0 0 3px 3px #FFF;
+    margin: 0px;
+    text-align: center;
+}
+
+.bk-hr:after {
+    content: "insert cell";
+    display: inline-block;
+    position: relative;
+    top: -0.5em;
+    font-size: 1.0em;
+    padding: 0 0.25em 0 0.25em;
+    background: rgba(255, 255, 255, 0.8);
+}
+
+.section0 {
+    font-size: 28pt;
+    font-weight: bold;
+    color: #365F91;
+}
+
+.section1 {
+    font-size: 24pt;
+    font-weight: bold;
+    color: #4F81BD;
+}
+
+.section2 {
+    font-size: 20pt;
+    font-weight: normal;
+    text-decoration: underline;
+    color: #4F81BD;
+}
+
+.section3 {
+    font-size: 16pt;
+    font-weight: normal;
+    font-style: italic;
+    color: #4F81BD;
+}
+
+.section4 {
+    font-size: 14pt;
+    font-weight: normal;
+    color: #4F81BD;
+}
+
+.section5 {
+    font-size: 12pt;
+    font-weight: normal;
+    color: #4F81BD;
+}
+
+.CodeMirror {
+    height: auto;
+    border: 1px solid grey;
+}
+
+.tschartcontainer {
+    width: 640px;
+    height: 480px;
+}
+
+a.disabled-link,
+a.disabled-link:visited,
+a.disabled-link:active,
+a.disabled-link:hover {
+    color: #aaa !important;
+}
+
+.Canvas {
+    font: 10pt Georgia;
+    background-color: #ECECEC;
+    color: #000000;
+    border: solid 1px #CECECE;
+}
+
+.ObjectBrace {
+    color: #00AA00;
+    font-weight: bold;
+}
+
+.ArrayBrace {
+    color: #0033FF;
+    font-weight: bold;
+}
+
+.PropertyName {
+    color: #CC0000;
+    font-weight: bold;
+}
+
+.String {
+    color: #007777;
+}
+
+.Number {
+    color: #AA00AA;
+}
+
+.Boolean {
+    color: #0000FF;
+}
+
+.Function {
+    color: #AA6633;
+    text-decoration: italic;
+}
+
+.Null {
+    color: #0000FF;
+}
+
+.Comma {
+    color: #000000;
+    font-weight: bold;
+}
+
+PRE.CodeContainer {
+    margin-top: 0px;
+    margin-bottom: 0px;
+}
+
+PRE.CodeContainer img {
+    cursor: pointer;
+    border: none;
+    margin-bottom: -1px;
+}
+
+.display-none {
+    display: none;
+}
+
+pre.out_warning {
+    background-color: #FFFFCE;
+}
+
+pre.out_error {
+    background-color: #FF9B9B;
+}
+
+.CodeMirror-fullscreen {
+    display: block;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    z-index: 9999;
+}
+
+.view-enter, .view-leave {
+    -webkit-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -moz-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    -o-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+    transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.5s;
+}
+
+.view-enter {
+    opacity: 0;
+    left: 100px;
+    width: 100%;
+    position: absolute;
+}
+
+.view-enter.view-enter-active {
+    left: 0;
+    opacity: 1;
+}
+
+.view-leave {
+    position: absolute;
+    left: 0;
+    width: 100%;
+    opacity: 1;
+}
+
+.view-leave.view-leave-active {
+    left: -100px;
+    opacity: 0;
+}
+
+.wave-enter, .wave-leave {
+    -webkit-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.3s;
+    -moz-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.3s;
+    -o-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.3s;
+    transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.3s;
+}
+
+.wave-enter {
+    position: relative;
+    left: 100%;
+}
+
+.wave-enter-active {
+    position: relative;
+    left: 0;
+}
+
+.wave-leave {
+    position: relative;
+    left: 0;
+}
+
+.wave-leave-active {
+    position: relative;
+    left: -150%;
+}
+
+input[type="text"].inputerror {
+    background-color: #FF9B9B;
+}
+
+input[type="text"].inputok {
+    background-color: #B7F0BE;
+}
+
+input[type="text"].inputsynced {
+    background-color: #FFFFFF;
+}
+
+span.red {
+    color: #FF0000;
+}
+
+.pushright {
+    padding-left: 12px;
+}
+
+.treeview-enter, .treeview-leave {
+    -webkit-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.2s;
+    -moz-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.2s;
+    -o-transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.2s;
+    transition: all cubic-bezier(0.250, 0.460, 0.450, 0.940) 0.2s;
+}
+
+.treeview-enter {
+    opacity: 0;
+    height: 0%;
+}
+
+.treeview-enter-active {
+    opacity: 1;
+    height: 100%;
+}
+
+.treeview-leave {
+    height: 100%;
+    opacity: 1;
+}
+
+.treeview-leave-active {
+    height: 0%;
+    opacity: 0;
+}
+
+tree-node {
+    cursor: pointer;
+}
+
+table.dataTable tbody td {
+    padding: 2px 2px;
+    white-space: nowrap;
+    border-left-style: solid;
+    border-right-style: solid;
+    border-left-width: 1px;
+    border-right-width: 1px;
+    border-left-color: gray;
+    border-right-color: gray;
+}
+
+.cursor_hand {
+    cursor: pointer;
+}
+
+.outputlogbox {
+    overflow: auto;
+}
+
+.outputlog {
+    vertical-align: top;
+}
+
+.outputlogcontainer {
+    padding-top: 5px;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    background-color: #E6F5F6;
+    position: fixed;
+    z-index: 10;
+}
+
+.prelog {
+    border: none;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    padding: 0px;
+}
+
+.ui-widget {
+    font-size: 0.9em !important;
+}
