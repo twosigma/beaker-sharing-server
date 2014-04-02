@@ -381,8 +381,8 @@ class RenderingHandler(BaseHandler):
             raise web.HTTPError(400, str(e))
         else:
             app_log.debug("Finished render of %s", download_url)
-        
-        html = self.render_template('beaker_notebook.html',
+
+        html = self.render_template(config['template'],
             body=nbhtml,
             download_url=download_url,
             home_url=home_url,

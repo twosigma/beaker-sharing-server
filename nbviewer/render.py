@@ -6,7 +6,8 @@
 #-----------------------------------------------------------------------------
 
 from tornado.log import app_log
-from IPython.nbformat.current import reads_json
+import json
+
 
 #-----------------------------------------------------------------------------
 # 
@@ -15,13 +16,27 @@ from IPython.nbformat.current import reads_json
 class NbFormatError(Exception):
     pass
 
-def render_notebook(exporter, json_notebook, url=None, forced_theme=None):
-    app_log.info("rendering %d B notebook from %s", len(json_notebook), url)
+def render_notebook(exporter, json_as_string, url=None, forced_theme=None):
+    app_log.info("rendering %d B notebook from %s", len(json_as_string), url)
+
+    try:
+        share_as_object = json.loads(json_as_string)
+    except ValueError:
+        raise NotJSONError("Notebook does not appear to be JSON: %r" % json_as_string[:16])
+
+    template = None
+    if share_as_object.get('notebookModel') and share_as_object.get('cellModel'):
+        template = 'beaker_section.html'
+    elif share_as_object.get('notebookModel'):
+        template = 'beaker_notebook.html'
+    elif share_as_object.get('cellModel'):
+        template = 'beaker_cell.html'
 
     name = 'Beaker Notebook'
 
     config = {
             'download_name': name,
             'css_theme': None,
+            'template': template
             }
-    return json_notebook, config
+    return json_as_string, config

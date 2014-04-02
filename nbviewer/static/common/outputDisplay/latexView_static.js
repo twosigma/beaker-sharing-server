@@ -28,9 +28,7 @@
         head.appendChild(scriptConfigMathJax);
         var script = document.createElement('script');
         script.type = 'text/javascript';
-        // TODO, after mathjax has been released to /usr/local/external/ use dweb to get it from there instead
-        // see https://wiki.twosigma.com:7945/confluence/display/Infrastructure/dweb+User%27s+Guide#dwebUsersGuide-usrlocalexternal
-        script.src = "https://dweb.twosigma.com/ext/public/mathjax/2.2/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+        script.src = "/static/vendor/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
         head.appendChild(script);
     });
     module.directive('bkoLatex', function ($compile) {
