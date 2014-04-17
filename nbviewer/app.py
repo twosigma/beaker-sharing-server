@@ -62,7 +62,7 @@ def main():
     define("debug", default=False, help="run in debug mode", type=bool)
     define("no_cache", default=False, help="Do not cache results", type=bool)
     define("localfiles", default="", help="Allow to serve local files under /localfile/* this can be a security risk", type=str)
-    define("port", default=5000, help="run on the given port", type=int)
+    define("port", default=80, help="run on the given port", type=int)
     define("cache_expiry_min", default=10*60, help="minimum cache expiry (seconds)", type=int)
     define("cache_expiry_max", default=2*60*60, help="maximum cache expiry (seconds)", type=int)
     define("mc_threads", default=1, help="number of threads to use for Async Memcache", type=int)
