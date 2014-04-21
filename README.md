@@ -96,7 +96,7 @@ run with
 
 ```
 $ cd <path to repo>
-$ python -m nbviewer --debug --no-cache
+$ python -m nbviewer --debug --no-cache --port=5000
 ```
 
 This will automatically relaunch the server is a change is detected on a python file, and not cache any result.
