@@ -98,8 +98,6 @@
             "BeakerDisplay": ["BeakerDisplay", "Text"],
             "Plot": ["Chart", "Text"],
             "TimePlot": ["Chart", "Text"],
-            "DcatJobBatch": ["DcatJobBatch", "Text"],
-            "FunctionContext": ["FunctionContext", "Text"],
             "HiddenOutputCell": ["Hidden"],
             "Warning": ["Warning"],
             "BeakerOutputContainerDisplay": ["OutputContainer", "Text"],
