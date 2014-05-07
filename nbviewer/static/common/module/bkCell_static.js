@@ -97,7 +97,7 @@
             link: function (scope, element, attrs) {
                 var div = element.find("div").first().get()[0];
                 var options = {
-                    basePath: 'https://dweb.twosigma.com/ext/public/epiceditor/0.2.2',
+                    basePath: '/static/vendor/epiceditor',
                     container: div,
                     file: {
                         defaultContent: scope.cellmodel.body
