@@ -417,6 +417,7 @@
       a.dispatchEvent(e);
     };
     var gistUrl = window.location.pathname.replace("/gist", "https://gist.github.com");
+    $scope.isGist = _.string.startsWith(window.location.pathname, "/gist");
     $scope.openGist = function() {
       window.open(gistUrl);
     };
