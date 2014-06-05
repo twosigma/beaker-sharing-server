@@ -396,7 +396,7 @@
       template: '<bk-output-display ng-repeat="m in model.items" model="m" show-separator="{{ $index != 0}}"></bk-output-display>'
     };
   });
-  
+
   module.controller('navBarCtrl', function($scope) {
     $scope.download  = function() {
       function cleanup(key, value) {
@@ -404,8 +404,8 @@
           return undefined;
         return value;
       }
-      
-      var data = JSON.stringify(window.notebookModel, cleanup, 4) + "\n";      
+
+      var data = JSON.stringify(window.notebookModel, cleanup, 4) + "\n";
       var filename = "notebook_" + _(window.location.pathname.split('/')).last() + ".bkr";
       var blob = new Blob([data], {type: 'text/json'});
       var e = document.createEvent('MouseEvents');
@@ -414,7 +414,11 @@
       a.href = window.URL.createObjectURL(blob);
       a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
       e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
-      a.dispatchEvent(e);      
+      a.dispatchEvent(e);
+    };
+    var gistUrl = window.location.pathname.replace("/gist", "https://gist.github.com");
+    $scope.openGist = function() {
+      window.open(gistUrl);
     };
   });
 })();
