@@ -32,7 +32,9 @@
             scope: {cellmodel: "=", viewmodel: "=", evviewmodel: "=", notebookmodel: "="},
             controller: function ($scope) {
                 $scope.isShowInput = function () {
-                    if ($scope.cellmodel.input.hidden === true || $scope.notebookmodel.locked) {
+                    if ($scope.cellmodel.input.hidden === true
+                        || ($scope.notebookmodel
+                            && $scope.notebookmodel.locked)) {
                         return false;
                     }
                     return true;
