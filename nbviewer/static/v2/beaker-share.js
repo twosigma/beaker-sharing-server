@@ -84772,7 +84772,7 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
 
         var div = element.find("div").first().get()[0];
         var options = {
-          basePath: './static/v2/vendor/epiceditor',
+          basePath: '/static/v2/vendor/epiceditor',
           container: div,
           file: {
             defaultContent: scope.cellmodel.body
@@ -86616,7 +86616,7 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
         head.appendChild(scriptConfigMathJax);
         var script = document.createElement('script');
         script.type = 'text/javascript';
-        script.src = "./static/v2/vendor/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
+        script.src = "/static/v2/vendor/mathjax/MathJax.js?config=TeX-AMS-MML_HTMLorMML";
         head.appendChild(script);
     });
     module.directive('bkoLatex', function ($compile) {
