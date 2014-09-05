@@ -6,7 +6,7 @@
 .pandoc
 bin
 build
-dist
+/nbviewer/static/components/headroom.js/dist
 *.egg-info
 *~
 .idea
