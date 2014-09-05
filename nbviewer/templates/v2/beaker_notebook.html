@@ -80,11 +80,12 @@
   <bko-output-container></bko-output-container>
 </script>
 
+
 <script type="text/ng-template" id="cell.html">
-  <div ng-class="isLocked() && 'locked'" class="bkcell {{cellmodel.type}}">
+  <div ng-class="isLocked() && 'locked'" class='bkcell {{"{{"}}cellmodel.type{{"}}"}}'>
     <div ng-if="cellmodel.input.hidden && cellmodel.type=='code'" class=""mini-cell-stats advanced-hide">
-    {{cellmodel.evaluator}} &nbsp;
-    ({{cellmodel.lineCount}} lines)
+    {{"{{"}}cellmodel.evaluator{{"}}"}} &nbsp;
+    ({{"{{"}}cellmodel.lineCount{{"}}"}} lines)
   </div>
   <div ng-include="getTypeCellUrl()"></div>
   <div>&nbsp</div>
@@ -99,8 +100,8 @@
       <span class="bksectiontoggleminus section-toggle" ng-click="toggleShowChildren()" ng-show="isShowChildren()">
         <i class="fa fa-minus"></i>
       </span>
-    <p class="depth-indicator">{{getFullIndex()}}</p>
-    <span class="section{{cellmodel.level}} bk-section-title" contenteditable="true">{{cellmodel.title}}</span>
+    <p class="depth-indicator">{{"{{"}}getFullIndex(){{"}}"}}</p>
+    <span class="section{{"{{"}}cellmodel.level{{"}}"}} bk-section-title" contenteditable="true">{{"{{"}}cellmodel.title{{"}}"}}</span>
   </div>
   <div>&nbsp</div>
   <div bk-show="isShowChildren()" class="section-children">
@@ -109,18 +110,18 @@
 </script>
 
 <script type="text/ng-template" id="codecell.html">
-  <div class="evaluator" evaluator-type="{{ cellmodel.evaluator }}" ng-class="{
+  <div class="evaluator" evaluator-type='{{"{{"}} cellmodel.evaluator {{"}}"}}' ng-class="{
       'evaluator-ready': cellmodel.evaluatorReader,
       'locked': isLocked(),
       'empty': isEmpty()
     }">
-    <p class="depth-indicator">{{getFullIndex()}}</p>
+    <p class="depth-indicator">{{"{{"}}getFullIndex(){{"}}"}}</p>
     <div class="bkcell code-cell-area">
       <div class="code-cell-input" ng-show="isShowInput()">
         <bk-code-cell-input-menu>
           <div class="dropdown">
             <div class="dropdown-toggle cell-evaluator-menu advanced-hide" data-toggle="dropdown">
-              <b>{{cellmodel.evaluator}}</b>
+              <b>{{"{{"}}cellmodel.evaluator{{"}}"}}</b>
             </div>
           </div>
         </bk-code-cell-input-menu>
@@ -137,7 +138,7 @@
         </ul>
         <bk-code-cell-output
             model="cellmodel.output"
-            evaluator-id="{{cellmodel.evaluator}}">
+            evaluator-id='{{"{{"}}cellmodel.evaluator{{"}}"}}'>
         </bk-code-cell-output>
       </div>
     </div>
