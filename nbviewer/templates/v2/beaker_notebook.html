@@ -13,27 +13,164 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
+
 <!DOCTYPE html>
 <html ng-app="bk.notebook.share">
-  <head>
-    {% include "v2/beaker_head.html" %} 
-    <script>
-      window.notebookModel = {{body}};         
-    </script>
-        
-	  {% include "v2/beaker_templates.html" %}
-	  {% include "beaker_tracking.html" %}
+<head lang="en">
+<meta charset="UTF-8">
+<title>{{title}}</title>
+  <link rel="stylesheet" href="/static/v2/beaker-share.css">
+  <script src="/static/v2/beaker-share.js"></script>
 
-  </head>
-  <body>
-	  {% include "v2/beaker_header.html" %}
-    <div class="container" style="width: 100%;">
-      <div class="row-fluid">
-        <container>
-          <bk-notebook></bk-notebook>
-        </container>
+<!-- templates for typed cells -->
+<script type="text/ng-template" id="section-cell.html">
+  <bk-section-cell></bk-section-cell>
+</script>
+<script type="text/ng-template" id="text-cell.html">
+  <bk-text-cell></bk-text-cell>
+</script>
+<script type="text/ng-template" id="markdown-cell.html">
+  <bk-markdown-cell></bk-markdown-cell>
+</script>
+<script type="text/ng-template" id="code-cell.html">
+  <bk-code-cell cellmodel="cellmodel" cellmenu="cellview.menu"></bk-code-cell>
+</script>
+
+<!-- outputDisplayTemplates -->
+<script type="text/ng-template" id="bkoHidden.html">
+  <div></div>
+</script>
+<script type="text/ng-template" id="bkoText.html">
+  <bko-text></bko-text>
+</script>
+<script type="text/ng-template" id="bkoWarning.html">
+  <bko-warning></bko-warning>
+</script>
+<script type="text/ng-template" id="bkoError.html">
+  <bko-error></bko-error>
+</script>
+<script type="text/ng-template" id="bkoHtml.html">
+  <bko-html></bko-html>
+</script>
+<script type="text/ng-template" id="bkoTable.html">
+  <bko-table-display></bko-table-display>
+</script>
+<script type="text/ng-template" id="bkoChart.html">
+  <bko-chart></bko-chart>
+</script>
+<script type="text/ng-template" id="bkoImage.html">
+  <bko-image></bko-image>
+</script>
+<script type="text/ng-template" id="bkoJSON.html">
+  <bko-json></bko-json>
+</script>
+<script type="text/ng-template" id="bkoLatex.html">
+  <bko-latex></bko-latex>
+</script>
+<script type="text/ng-template" id="bkoVega.html">
+  <bko-vega></bko-vega>
+</script>
+<script type="text/ng-template" id="bkoDcatJobBatch.html">
+  <bko-job-batch></bko-job-batch>
+</script>
+<script type="text/ng-template" id="bkoFunctionContext.html">
+  <bko-function-context></bko-function-context>
+</script>
+<script type="text/ng-template" id="bkoOutputContainer.html">
+  <bko-output-container></bko-output-container>
+</script>
+
+<script type="text/ng-template" id="cell.html">
+  <div ng-class="isLocked() && 'locked'" class="bkcell {{cellmodel.type}}">
+    <div ng-if="cellmodel.input.hidden && cellmodel.type=='code'" class=""mini-cell-stats advanced-hide">
+    {{cellmodel.evaluator}} &nbsp;
+    ({{cellmodel.lineCount}} lines)
+  </div>
+  <div ng-include="getTypeCellUrl()"></div>
+  <div>&nbsp</div>
+  </div>
+</script>
+
+<script type="text/ng-template" id="sectioncell.html">
+  <div ng-hide="cellmodel.hideTitle">
+      <span class="bksectiontoggleplus section-toggle" ng-click="toggleShowChildren()" ng-hide="isShowChildren()">
+        <i class="fa fa-plus"></i>
+      </span>
+      <span class="bksectiontoggleminus section-toggle" ng-click="toggleShowChildren()" ng-show="isShowChildren()">
+        <i class="fa fa-minus"></i>
+      </span>
+    <p class="depth-indicator">{{getFullIndex()}}</p>
+    <span class="section{{cellmodel.level}} bk-section-title" contenteditable="true">{{cellmodel.title}}</span>
+  </div>
+  <div>&nbsp</div>
+  <div bk-show="isShowChildren()" class="section-children">
+    <bk-cell ng-repeat="cell in getChildren()" cellmodel="cell" index="$index"></bk-cell>
+  </div>
+</script>
+
+<script type="text/ng-template" id="codecell.html">
+  <div class="evaluator" evaluator-type="{{ cellmodel.evaluator }}" ng-class="{
+      'evaluator-ready': cellmodel.evaluatorReader,
+      'locked': isLocked(),
+      'empty': isEmpty()
+    }">
+    <p class="depth-indicator">{{getFullIndex()}}</p>
+    <div class="bkcell code-cell-area">
+      <div class="code-cell-input" ng-show="isShowInput()">
+        <bk-code-cell-input-menu>
+          <div class="dropdown">
+            <div class="dropdown-toggle cell-evaluator-menu advanced-hide" data-toggle="dropdown">
+              <b>{{cellmodel.evaluator}}</b>
+            </div>
+          </div>
+        </bk-code-cell-input-menu>
+        <textarea class="bkcelltextarea" ng-model="cellmodel.input.body"></textarea>
+      </div>
+      <div ng-if="hasOutput()" class="code-cell-output" ng-class="{
+          'no-output': isHiddenOutput(),
+          'output-hidden': cellmodel.output.hidden
+        }">
+        <ul class="cell-output-labels advanced-hide">
+          <li ng-if="!isShowOutput()"><b> Output Hidden</b></li>
+          <li ng-if="cellmodel.output.result.innertyle != 'Error' && isShowOutput()"><b>Cell Output</b></li>
+          <li class="error-title" ng-if="cellmodel.output.result.innertype == 'Error' && isShowOutput()"><b>Error</b></li>
+        </ul>
+        <bk-code-cell-output
+            model="cellmodel.output"
+            evaluator-id="{{cellmodel.evaluator}}">
+        </bk-code-cell-output>
       </div>
     </div>
-	  {% include "beaker_footer.html" %}
-  </body>
+  </div>
+</script>
+
+<script>
+  window.notebookModel = {{body}};
+</script>
+
+</head>
+<body>
+<div id="menubar" class="navbar navbar-fixed-top" ng-controller="navBarCtrl">
+  <div class="navbar-inner">
+    <div class="container-fluid">
+      <div class="nav-collapse collapse">
+        <a class="brand" href="http://beakernotebook.com">
+          <img src="./images/beaker_icon@2x.png">
+          Beaker - The data scientist's laboratory
+        </a>
+        <button ng-if="isGist" class="btn pull-right" ng-click="openGist()">Open gist</button>
+        <button class="nav-btn pull-right" ng-click="download()">Download notebook</button>
+      </div>
+    </div>
+  </div>
+</div>
+<div class="container notebook-container" style="width:100%">
+  <div class="row-fluid">
+    <div class="span12">
+      <bk-notebook></bk-notebook>
+    </div>
+  </div>
+</div>
+{% include "beaker_footer.html" %}
+</body>
 </html>
