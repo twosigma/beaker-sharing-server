@@ -40,6 +40,24 @@
     'bk.commonUi'
   ]);
 
+  window.beaker = {};
+  window.beaker.bkoDirective = function(name, list) {
+    module.directive("bko" + name, list);
+  };
+  window.beaker.bkoFactory = function(name, list) {
+    module.factory(name, list);
+  };
+  module.factory("bkCellMenuPluginManager", function() {
+    return {
+      getPlugin: function() {
+
+      },
+      getMenuItems: function() {
+
+      }
+    };
+  });
+
   module.factory("notebookModel", function() {
     return window.notebookModel;
   });
@@ -215,6 +233,14 @@
             return display;
           }
         };
+        var dummyPlotModel = {
+          getCellModel: function() {
+            return $scope.cellmodel.output.result;
+          },
+          resetShareMenuItems: function() {
+
+          }
+        };
         $scope.getOutputDisplayModel = function () {
           var display = $scope.cellmodel.output.selectedType;
           if (!display) {
@@ -222,6 +248,8 @@
           }
           if (display === "BeakerDisplay") {
             return $scope.cellmodel.output.result.object;
+          } else if (display === "Plot" || display === "CombinedPlot") {
+            return dummyPlotModel;
           } else {
             return $scope.cellmodel.output.result;
           }
@@ -239,7 +267,7 @@
         showSeparator: "@"
       },
       template: '<hr ng-if="showSeparator" /><div ng-include="getType()"></div>',
-      controller: function ($scope, outputDisplayFactory) {
+      controller: ["$scope", "outputDisplayFactory", function ($scope, outputDisplayFactory) {
         var getDefaultType = function (model) {
           var display = outputDisplayFactory.getApplicableDisplays(model)[0];
           if (display === "BeakerDisplay") {
@@ -255,11 +283,13 @@
         $scope.getType = function () {
           if ($scope.type) {
             return "bko" + $scope.type + ".html";
+          } else if ($scope.model.getCellModel && $scope.model.getCellModel().type === "plot") {
+            return "bkoPlot.html";
           } else {
             return getDefaultType($scope.model);
           }
         };
-      }
+      }]
     };
   });
 

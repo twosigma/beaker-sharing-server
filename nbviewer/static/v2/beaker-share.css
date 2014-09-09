@@ -263,1043 +263,123 @@ div.CodeMirror span.CodeMirror-nonmatchingbracket {color: #f22;}
 }
 
 /*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-@font-face {
-  font-family: 'pt_sansregular';
-  src: url("/static/v2/fonts/regular/pts55f-webfont.eot");
-  src: url("/static/v2/fonts/regular/pts55f-webfont.eot?#iefix") format("embedded-opentype"), url("/static/v2/fonts/regular/pts55f-webfont.woff") format("woff"), url("/static/v2/fonts/regular/pts55f-webfont.ttf") format("truetype"), url("/static/v2/fonts/regular/pts55f-webfont.svg#pt_sansregular") format("svg");
-  font-weight: normal;
-  font-style: normal; }
+*  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+.plot-renderdiv {
+  background-color: #FEFEFE;
+  border: 1px solid #BBBBBB; }
 
-@font-face {
-  font-family: 'pt_sansbold';
-  src: url("/static/v2/fonts/bold/pts75f-webfont.eot");
-  src: url("/static/v2/fonts/bold/pts75f-webfont.eot?#iefix") format("embedded-opentype"), url("/static/v2/fonts/bold/pts75f-webfont.woff") format("woff"), url("/static/v2/fonts/bold/pts75f-webfont.ttf") format("truetype"), url("/static/v2/fonts/bold/pts75f-webfont.svg#pt_sansbold") format("svg");
-  font-weight: normal;
-  font-style: normal; }
+.plot-label, .plot-test, .plot-xylabel, .plot-cursorlabel, .plot-constlabel {
+  font-family: verdana, helvetica, arial, sans-serif; }
 
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.beaker-btn {
-  color: #000;
-  cursor: pointer;
-  border: solid 1px #CCC;
-  padding: 8px 19px;
-  font-size: 14px;
-  background: #f1f1f1; }
-  .beaker-btn.mid {
-    font-size: 12px; }
-  .beaker-btn.small {
-    font-size: 10px; }
-  .beaker-btn:focus {
-    outline: none; }
-  .beaker-btn:hover {
-    text-decoration: none;
-    background: #e4e4e4; }
-  .beaker-btn.active {
-    color: #FFF;
-    border: solid 1px #159be8;
-    background: #39a9ed; }
-    .beaker-btn.active:hover {
-      background: #22a1eb; }
+.plot-const, .plot-line {
+  fill: none; }
 
-.btn-group .beaker-btn {
-  margin: 0 5px; }
+.plot-label {
+  font-size: 0.75em; }
 
-.left {
-  float: left; }
+.plot-text {
+  font-size: 1em; }
 
-.right {
-  float: right; }
+.plot-xylabel {
+  font-size: 0.9em;
+  text-anchor: middle; }
 
-.cl {
-  clear: both; }
+.plot-cursorlabel, .plot-constlabel {
+  font-size: 0.75em;
+  font-weight: bold;
+  color: white;
+  padding: 1px 5px;
+  pointer-events: none;
+  position: absolute;
+  width: auto;
+  height: auto;
+  border-radius: 5px; }
 
-.plugin-active {
-  color: limegreen; }
+.plot-coord, .plot-coord-base {
+  stroke-width: 1;
+  pointer-events: none; }
 
-.plugin-url.bkr {
-  font-size: 18px; }
+.plot-const, .plot-line, .plot-river, .plot-cursor {
+  pointer-events: none; }
 
-.plugin-loading {
-  color: orange; }
+.plot-bar, .plot-stem {
+  pointer-events: auto; }
 
-.plugin-known {
-  color: lightgray; }
+.plot-coord {
+  stroke: #111111;
+  stroke-dasharray: 1, 1;
+  stroke-width: 1;
+  opacity: 0.5; }
 
-.plugin-invisible {
-  opacity: 0; }
+.plot-coord-base {
+  stroke: #333333;
+  stroke-width: 3;
+  opacity: 0.75; }
 
-.plugin-status {
-  font-size: 150%;
-  vertical-align: -2px; }
+.plot-locatebox {
+  fill: #003366;
+  opacity: 0.2; }
 
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-html .navbar .container {
-  width: 100%; }
-html .navbar .navbar-inner:after {
-  display: none; }
-html .navbar .brand {
-  padding: 10px 23px 7px;
-  margin-left: 7px; }
-  html .navbar .brand img {
-    margin-top: -7px;
-    height: 22px; }
+.plot-truncatebox {
+  fill: #FEFEFE; }
 
-.sub-nav {
-  display: block;
-  clear: both;
-  background: #eff2f8;
-  margin: 0;
-  position: relative;
-  left: -10px;
-  width: 100%;
-  padding: 0 35px;
-  height: 39px;
-  box-shadow: 0px 1px 2px rgba(26, 26, 26, 0.39);
-  -webkit-box-shadow: 0px 1px 2px rgba(26, 26, 26, 0.39); }
+.plot-title {
+  text-align: center;
+  font-weight: bold;
+  font-size: 1.2em;
+  margin: 5px; }
 
-.sub-nav > li {
-  margin-right: 20px;
-  display: block;
-  float: left; }
-  .sub-nav > li.pull-right {
-    float: right; }
-  .sub-nav > li > a.dropdown-toggle {
-    padding: 10px;
-    text-decoration: none; }
-    .sub-nav > li > a.dropdown-toggle:hover {
-      color: #fff;
-      background: #39a9ed; }
-  .sub-nav > li .dropdown-toggle {
-    display: block;
-    padding: 10px 5px; }
-  .sub-nav > li span.offline-label {
-    color: #FF0000;
-    cursor: pointer; }
-
-html .navbar a.brand, html .navbar .nav > li > a {
-  color: #FFF;
-  text-shadow: none; }
-
-.navbar-fixed-top .navbar-inner {
-  background: #3f5264;
-  box-shadow: none;
-  -webkit-box-shadow: none; }
-
-.navbar .nav > li > a:hover {
-  color: #FFF; }
-
-.navbar .nav li.dropdown.open > .dropdown-toggle, .navbar .nav li.dropdown.active > .dropdown-toggle, .navbar .nav li.dropdown.open.active > .dropdown-toggle {
-  background: transparent; }
-
-.navbar .nav li.dropdown.open > .dropdown-toggle, .navbar .nav li.dropdown.active > .dropdown-toggle, .navbar .nav li.dropdown.open.active > .dropdown-toggle {
-  color: #FFF; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.dropdown-menu {
-  border-radius: 0;
-  -webkit-border-radius: 0;
-  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-  -webkit-box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
-  border: none; }
-
-.dropdown-submenu > .dropdown-menu {
-  border-radius: 0;
-  -webkit-border-radius: 0; }
-
-html .dropdown-menu li a:hover, html .dropdown-submenu:hover > a {
-  background: #39a9ed; }
-
-.dropdown.new-cell-menu {
-  margin: 10px 0;
+.plot-legendbox {
+  width: 12px;
+  height: 12px;
+  margin: 0px 5px;
   display: inline-block; }
 
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.dashboard.container {
-  padding: 30px 0; }
-  .dashboard.container .new-notebook {
-    margin: 20px 0;
-    display: inline-block; }
-
-.open-notebook-headline {
-  margin-top: 36px; }
-
-.notebook-dashboard-list {
-  margin: 0;
-  list-style: none; }
-  .notebook-dashboard-list .caption {
-    cursor: pointer;
-    font-size: 15px;
-    font-weight: bold; }
-    .notebook-dashboard-list .caption:hover {
-      text-decoration: underline; }
-  .notebook-dashboard-list .session {
-    margin: 10px 0;
-    border: solid 1px #CCC;
-    padding: 20px;
-    border-left: solid 3px #41566a; }
-  .notebook-dashboard-list .path {
-    margin-bottom: -7px; }
-  .notebook-dashboard-list .light {
-    color: #7E7E7E;
-    font-size: 11px;
-    margin-right: 30px; }
-    .notebook-dashboard-list .light span {
-      color: #73be3b; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.evaluator.locked.empty {
-  display: none; }
-
-.advanced-mode .advanced-hide {
-  display: none !important; }
-.advanced-mode .bkcell .CodeMirror {
-  top: -20px;
-  position: relative;
-  margin-bottom: -25px; }
-.advanced-mode bk-output-display pre {
-  position: relative;
-  top: 15px;
-  left: 5px;
-  margin-top: 5px;
-  padding-bottom: 20px; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.bkcell bk-new-cell-menu {
-  display: block; }
-  .bkcell bk-new-cell-menu .dropdown-toggle {
-    opacity: 0;
-    transition: opacity, 300ms; }
-  .bkcell bk-new-cell-menu:hover .dropdown-toggle {
-    opacity: 1; }
-
-bk-new-cell-menu .dropdown-toggle {
-  text-decoration: none; }
-bk-new-cell-menu .shift-right {
-  margin-left: 1px; }
-
-.dropdown-toggle {
-  color: #3f5264;
-  font-size: 13px; }
-
-.locked .toggle-menu {
-  display: none; }
-
-.toggle-menu {
-  top: 20px;
-  right: 20px;
-  z-index: 1;
-  position: absolute; }
-
-.cell-menu-item {
-  float: right;
-  cursor: pointer;
-  height: 24px;
-  padding: 0 15px; }
-
-.cell-status-item {
-  float: right;
-  height: 24px;
-  padding: 0 15px; }
-
-.cell-menu-item.disabled {
-  opacity: 0.3;
-  cursor: not-allowed; }
-
-.cell-menu-item:hover {
-  color: #FFF;
-  background-color: #39a9ed; }
-  .cell-menu-item:hover.delete-cell {
-    background-image: url(/static/v2/images/trash_white@2x.png); }
-  .cell-menu-item:hover.move-cell-up {
-    background-image: url(/static/v2/images/up_white@2x.png); }
-  .cell-menu-item:hover.move-cell-down {
-    background-image: url(/static/v2/images/down_white@2x.png); }
-  .cell-menu-item:hover.expand-contract {
-    background-image: url(/static/v2/images/collapse_white@2x.png); }
-    .cell-menu-item:hover.expand-contract.collapsed {
-      background-image: url(/static/v2/images/expand_white@2x.png); }
-  .cell-menu-item:hover.cell-dropdown {
-    background-image: url(/static/v2/images/menu_white@2x.png); }
-  .cell-menu-item:hover.loading-state .loading-spinner {
-    background-image: url(/static/v2/images/loading_white@2x.png); }
-
-.delete-cell {
-  background: url(/static/v2/images/trash@2x.png) no-repeat center;
-  background-size: 9px; }
-
-.move-cell-up {
-  background: url(/static/v2/images/up@2x.png) no-repeat center;
-  background-size: 8px; }
-
-.move-cell-down {
-  background: url(/static/v2/images/down@2x.png) no-repeat center;
-  background-size: 8px; }
-
-.expand-contract {
-  background: url(/static/v2/images/collapse@2x.png) no-repeat center;
-  background-size: 11px; }
-  .expand-contract.collapsed {
-    background-image: url(/static/v2/images/expand@2x.png); }
-
-.loading-spinner {
-  top: 4px;
-  width: 15px;
-  margin: 0 -10px 0 10px;
-  height: 15px;
-  display: inline-block;
-  position: relative;
-  background-image: url(/static/v2/images/loading@2x.png);
-  background-size: cover; }
-
-.cell-dropdown {
-  background: url(/static/v2/images/menu@2x.png) no-repeat center;
-  background-size: 3px; }
-
-.cell-evaluator-menu {
-  color: #73be3b;
-  cursor: pointer;
-  display: inline-block;
-  font-size: 12px;
-  background: url(/static/v2/images/down@2x.png) no-repeat center right;
-  padding-right: 13px;
-  background-size: 8px; }
-  .cell-evaluator-menu:hover {
-    color: #68ab35; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.outline {
-  position: absolute;
-  width: 100%;
-  height: 100%;
-  left: -1px;
-  top: -1px;
-  z-index: 0;
-  padding-bottom: 20px; }
-  .outline.error {
-    border: solid 1px #AF061B; }
-  .outline.warning {
-    border: solid 1px #DBDB55; }
-
-.error-title {
-  color: #AF061B; }
-
-.toggle-error {
-  width: 20px;
-  height: 20px;
-  border: solid 1px;
-  cursor: pointer;
-  display: inline-block;
-  text-align: center;
-  line-height: 18px;
-  margin-right: 10px; }
-
-pre.out_warning {
-  color: #DBDB55;
-  padding: 10px 0;
-  z-index: 1;
-  position: relative; }
-pre.out_error {
-  color: #AF061B;
-  padding: 10px 0;
-  z-index: 1;
-  position: relative; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-bk-code-cell-output .ui-state-default {
-  background: #ebebeb; }
-bk-code-cell-output .slick-header-column, bk-code-cell-output .slick-cell, bk-code-cell-output .slick-headerrow-column {
-  text-align: center;
-  font-family: pt_sansregular; }
-bk-code-cell-output .slick-header-column.ui-state-default {
-  height: 14px; }
-bk-code-cell-output .slick-cell {
-  border-right-color: #CCC;
-  border-right-style: solid;
-  border-bottom-color: #CCC; }
-  bk-code-cell-output .slick-cell.r0 {
-    border-left: solid 1px #CCC; }
-bk-code-cell-output .slick-column-name {
-  margin-left: -9px; }
-bk-code-cell-output .slick-header-column:first-child {
-  border-left: solid 1px #CCC; }
-
-.bkcell {
-  margin-bottom: 10px; }
-  .bkcell .CodeMirror {
-    background: transparent; }
-
-bk-markdown-cell > div {
-  border: solid 1px #CCC;
-  padding-top: 30px;
-  overflow: hidden; }
-
-.mini-cell-stats {
-  top: 22px;
-  left: 20px;
-  color: #7E7E7E;
-  position: absolute;
-  font-size: 12px; }
-
-.loading-state {
-  color: #7E7E7E;
-  font-size: 11px;
-  line-height: 25px; }
-
-.bkcell.code-cell-area, .text-cell {
-  padding: 20px;
-  border: solid 1px #CCC; }
-
-.bkcell bk-code-cell-input-menu .dropdown {
-  float: left;
-  z-index: 99;
-  position: relative;
-  padding-bottom: 20px; }
-
-bk-cell > .bkcell {
-  position: relative; }
-
-bk-section-cell, bk-text-cell {
-  padding: 20px; }
-
-.bkcell bk-code-cell-input-menu .dropdown .dropdown-menu {
-  margin-top: -20px; }
-
-bk-code-cell .code-cell-output {
-  margin: 20px -20px 0px;
-  padding: 0 20px;
-  position: relative;
-  border-top: solid 1px #CCC; }
-  bk-code-cell .code-cell-output.input-hidden {
-    margin-top: 35px; }
-
-.advanced-mode bk-code-cell .code-cell-output {
-  margin-top: 20px; }
-  .advanced-mode bk-code-cell .code-cell-output.no-output .cell-menu-item {
-    display: none; }
-
-.advanced-mode .output-hidden .cell-menu-item {
-  display: none; }
-
-bk-code-cell .locked .code-cell-output {
-  border: none;
-  margin-top: 0; }
-
-bk-output-display .slickgrid {
-  padding-top: 10px; }
-
-bk-output-display pre {
-  border: none;
-  margin: 0;
-  padding: 0;
-  background: transparent; }
-
-.base-menu-add .insert-cell-indicator {
-  padding: 8px 13px; }
-
-.insert-cell-indicator {
-  color: #FFF;
-  cursor: pointer;
-  display: inline-block;
-  padding: 2px 5px 0;
-  font-size: 13px;
-  background: #39a9ed;
-  font-weight: bold;
-  white-space: nowrap; }
-
-.code-cell-hidden {
-  padding-top: 20px; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.depth-indicator {
-  display: none;
-  background: #73be3b;
-  color: #FFF;
-  font-size: 14px;
-  font-weight: bold;
-  text-align: center;
-  height: 23px;
-  line-height: 25px;
-  margin: 0 10px;
-  padding: 0 10px; }
-
-.section > .toggle-menu .advanced-hide, .section > .toggle-menu .move-cell-up, .section > .toggle-menu .move-cell-down {
-  display: none; }
-
-.section0, .section1, .section2, .section3, .section4, .section5 {
-  color: #47474A;
-  font-family: 'pt_sansbold', Helvetica, sans-serif; }
-
-.section-toggle {
-  color: #39a9ed;
-  cursor: pointer;
-  font-size: 16px;
-  font-family: 'pt_sansbold', Helvetica, sans-serif;
+.plot-legendcheckbox {
+  margin: 0px !important;
   margin-right: 5px; }
 
-.section0 {
-  font-size: 30px; }
-
-.section1 {
-  font-size: 26px; }
-
-.section2 {
-  font-size: 24px; }
-
-.section3 {
-  font-size: 22px; }
-
-.section4 {
-  font-size: 20px; }
-
-.section5 {
-  font-size: 18px; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-@-webkit-keyframes rotating {
-  from {
-    -webkit-transform: rotate(0deg); }
-
-  to {
-    -webkit-transform: rotate(360deg); } }
-
-.rotating {
-  -webkit-animation: rotating 2s linear infinite; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.hierarchy-mode .mini-cell-stats {
-  left: 104px; }
-.hierarchy-mode .evaluator .depth-indicator, .hierarchy-mode .text-cell .depth-indicator, .hierarchy-mode bk-markdown-cell .depth-indicator {
-  left: 0;
-  position: absolute; }
-.hierarchy-mode .text-cell .depth-indicator {
-  top: 0; }
-.hierarchy-mode .bkcell.code-cell-area, .hierarchy-mode .text-cell, .hierarchy-mode .bk-markdown-cell, .hierarchy-mode bk-markdown-cell > div {
-  margin-left: 84px; }
-.hierarchy-mode .insert-cell-indicator {
-  margin-left: 4px; }
-.hierarchy-mode .depth-indicator {
-  display: inline-block; }
-.hierarchy-mode .section-children {
-  border-left: solid 1px #e6e6e6;
-  margin-left: 10px;
-  padding-left: 54px; }
-.hierarchy-mode .bk-section-title {
-  top: 5px;
-  position: relative; }
-
-.bkcell.code-cell-area, .text-cell {
-  transition: margin 500ms; }
-
-.section-children {
-  margin-left: 0;
-  padding-left: 0;
-  transition: all 500ms; }
-
-/*
- *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
- *
- *  Licensed under the Apache License, Version 2.0 (the "License");
- *  you may not use this file except in compliance with the License.
- *  You may obtain a copy of the License at
- *
- *         http://www.apache.org/licenses/LICENSE-2.0
- *
- *  Unless required by applicable law or agreed to in writing, software
- *  distributed under the License is distributed on an "AS IS" BASIS,
- *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
- *  See the License for the specific language governing permissions and
- *  limitations under the License.
- */
-.outputlogbox {
-  overflow: auto; }
-
-.outputlog {
-  vertical-align: top; }
-
-.btn-toolbar {
-  padding: 10px;
-  text-align: center; }
-
-.alt-controls {
-  float: right; }
-
-.outputlogerr, .outputlogout {
-  float: left;
-  width: 50%;
-  display: block;
-  padding: 0 10px;
-  box-sizing: border-box; }
-
-.outputlogbox {
-  height: 200px;
-  overflow: auto; }
-
-.output-label {
-  font-family: pt_sansbold; }
-
-.outputlogcontainer {
-  background-color: #eff2f8;
-  position: fixed;
-  left: 0;
-  width: 100%;
-  z-index: 100;
-  bottom: 0;
-  height: 300px; }
-
-.prelog {
-  border: none;
-  margin: 0 auto;
-  padding: 0;
-  background: transparent;
-  font-family: monospace;
-  border-radius: 0; }
-
-.outputloghandle {
-  background: linear-gradient(#DDE0E6, #EFF2F8, #DDE0E6);
-  border: 1;
-  height: 10px;
-  width: 100%;
-  cursor: ns-resize; }
-
-root {
-  display: block; }
-
-html body {
-  margin: 10px;
-  padding-top: 30px;
-  font-family: 'pt_sansregular', Helvetica, sans-serif; }
-
-ul.cell-output-labels {
-  list-style: none;
-  margin: 0; }
-
-.notebook-container {
-  padding: 0 30px;
-  margin-top: 10px;
-  box-sizing: border-box; }
-
-.locked .cell-output-labels li {
-  padding-top: 0; }
-
-.cell-output-labels li {
-  display: inline-block;
-  padding: 15px 15px 5px 0;
-  font-size: 13px; }
-
-.output_subarea {
-  background: transparent;
-  border: none; }
-
-.bkcell a.evaluate-script {
-  color: black;
-  border: solid 1px #d5d5d5;
-  display: inline-block;
-  padding: 7px 26px;
-  font-size: 13px;
-  margin-top: 20px;
-  background: #f1f1f1; }
-
-.bkcell a.evaluate-script:hover {
-  text-decoration: none; }
-
-.bkcell .CodeMirror {
-  clear: both; }
-
-.CodeMirror-linenumber {
-  text-align: left; }
-
-.CodeMirror-gutters {
-  border: none;
-  background-color: transparent; }
-
-.CodeMirror {
-  height: auto; }
-
-.tschartcontainer {
-  width: 640px;
-  height: 480px; }
-
-a.disabled-link, a.disabled-link:visited, a.disabled-link:active, a.disabled-link:hover {
-  color: #aaa !important; }
-
-.Canvas {
-  font: 10pt Georgia;
-  background-color: #ECECEC;
-  color: #000000;
-  border: solid 1px #CECECE; }
-
-.ObjectBrace {
-  color: #00AA00;
-  font-weight: bold; }
-
-.ArrayBrace {
-  color: #0033FF;
-  font-weight: bold; }
-
-.PropertyName {
-  color: #CC0000;
-  font-weight: bold; }
-
-.String {
-  color: #007777; }
-
-.Number {
-  color: #AA00AA; }
-
-.Boolean {
-  color: #0000FF; }
-
-.Function {
-  color: #AA6633;
-  text-decoration: italic; }
-
-.Null {
-  color: #0000FF; }
-
-.Comma {
-  color: #000000;
-  font-weight: bold; }
-
-PRE.CodeContainer {
-  margin-top: 0px;
-  margin-bottom: 0px; }
-
-PRE.CodeContainer img {
-  cursor: pointer;
-  border: none;
-  margin-bottom: -1px; }
-
-.display-none {
-  display: none; }
-
-.CodeMirror-fullscreen {
-  display: block;
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  z-index: 9999; }
-
-input[type="text"].inputerror {
-  background-color: #FF9B9B; }
-
-input[type="text"].inputok {
-  background-color: #B7F0BE; }
-
-input[type="text"].inputsynced {
-  background-color: #FFFFFF; }
-
-span.red {
-  color: #FF0000; }
-
-.pushright {
-  padding-left: 12px; }
-
-.bk-treeview.ng-enter, .bk-treeview.ng-leave {
-  -webkit-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
-  -moz-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
-  -o-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
-  transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s; }
-
-.bk-treeview.ng-enter {
-  opacity: 0;
-  height: 0%; }
-
-.bk-treeview.ng-enter-active {
-  opacity: 1;
-  height: 100%; }
-
-.bk-treeview.ng-leave {
-  height: 100%;
-  opacity: 1; }
-
-.bk-treeview.ng-leave-active {
-  height: 0%;
-  opacity: 0; }
-
-tree-node {
-  cursor: pointer; }
-
-table.dataTable tbody td {
-  padding: 2px 2px;
-  white-space: nowrap;
-  border-left-style: solid;
-  border-right-style: solid;
-  border-left-width: 1px;
-  border-right-width: 1px;
-  border-left-color: gray;
-  border-right-color: gray; }
-
-.cursor_hand {
-  cursor: pointer; }
-
-.ui-widget {
-  font-size: 0.9em !important; }
-
-.text-white {
-  color: #FFFFFF; }
-
-/** TODO - where should this really go? here? */
-.bk-table-cell-selected {
-  background-color: #d8dbdc; }
-
-/**
- * Ordering here matters because we'll be both
- * selected and copied at the same time.
- * See: http://www.w3.org/TR/CSS21/cascade.html#cascading-order rule #4.
- */
-.bk-table-copied-cell {
-  /** Transition from the normal selection color.
-	From the example-excel-compatible-spreadsheet.html demo.
-	Seems to look cool. */
-  background-color: #d8dbdc;
-  /** to TS Light Teal */
-  background-color: #cddfd6;
-  -webkit-transition: 0.5s background; }
-
-.CodeMirror-matchingbracket {
-  font-weight: bold; }
-
-/**
- * Hack for the bootstrap bug where pull-left submenus might have a gap.
- * Addresses BEAKER-433
- */
-.dropdown-menu {
-  width: 250px;
-  margin-top: -1px; }
-
-.addeval {
-  padding-top: 10px;
-  padding-bottom: 20px; }
-
-.modal-large {
-  max-height: 800px; }
-
-.text-danger {
-  color: #a94442; }
-
-.nav-btn {
-  color: black;
-  border: solid 1px #d5d5d5;
-  display: inline-block;
-  padding: 2px 12px;
-  font-size: 13px;
-  margin-top: 7px;
-  background: #f1f1f1;
-  line-height: 20px; }
+.plot-legendcontainer {
+  stroke: gray;
+  fill: #FEFEFE;
+  position: absolute;
+  padding-left: 10px;
+  width: 150px;
+  height: auto;
+  border: 1px solid #BBBBBB;
+  background-color: white;
+  list-style: none; }
+
+.plot-coverbox {
+  fill: #FEFEFE; }
+
+.plot-dot {
+  fill: white;
+  stroke-width: 2; }
+
+.plot-tooltip {
+  font-size: 0.9em;
+  font-weight: bold;
+  position: absolute;
+  width: auto;
+  height: auto;
+  border: 2px solid;
+  background-color: white;
+  border-radius: 5px;
+  padding: 1em; }
 
 .CodeMirror-hints {
   position: absolute;
@@ -7507,6 +6587,1045 @@ a.badge:focus {
 .affix {
   position: fixed;
 }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+@font-face {
+  font-family: 'pt_sansregular';
+  src: url("/static/v2/fonts/regular/pts55f-webfont.eot");
+  src: url("/static/v2/fonts/regular/pts55f-webfont.eot?#iefix") format("embedded-opentype"), url("/static/v2/fonts/regular/pts55f-webfont.woff") format("woff"), url("/static/v2/fonts/regular/pts55f-webfont.ttf") format("truetype"), url("/static/v2/fonts/regular/pts55f-webfont.svg#pt_sansregular") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+
+@font-face {
+  font-family: 'pt_sansbold';
+  src: url("/static/v2/fonts/bold/pts75f-webfont.eot");
+  src: url("/static/v2/fonts/bold/pts75f-webfont.eot?#iefix") format("embedded-opentype"), url("/static/v2/fonts/bold/pts75f-webfont.woff") format("woff"), url("/static/v2/fonts/bold/pts75f-webfont.ttf") format("truetype"), url("/static/v2/fonts/bold/pts75f-webfont.svg#pt_sansbold") format("svg");
+  font-weight: normal;
+  font-style: normal; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.beaker-btn {
+  color: #000;
+  cursor: pointer;
+  border: solid 1px #CCC;
+  padding: 8px 19px;
+  font-size: 14px;
+  background: #f1f1f1; }
+  .beaker-btn.mid {
+    font-size: 12px; }
+  .beaker-btn.small {
+    font-size: 10px; }
+  .beaker-btn:focus {
+    outline: none; }
+  .beaker-btn:hover {
+    text-decoration: none;
+    background: #e4e4e4; }
+  .beaker-btn.active {
+    color: #FFF;
+    border: solid 1px #159be8;
+    background: #39a9ed; }
+    .beaker-btn.active:hover {
+      background: #22a1eb; }
+
+.btn-group .beaker-btn {
+  margin: 0 5px; }
+
+.left {
+  float: left; }
+
+.right {
+  float: right; }
+
+.cl {
+  clear: both; }
+
+.plugin-active {
+  color: limegreen; }
+
+.plugin-url.bkr {
+  font-size: 18px; }
+
+.plugin-loading {
+  color: orange; }
+
+.plugin-known {
+  color: lightgray; }
+
+.plugin-invisible {
+  opacity: 0; }
+
+.plugin-status {
+  font-size: 150%;
+  vertical-align: -2px; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+html .navbar .container {
+  width: 100%; }
+html .navbar .navbar-inner:after {
+  display: none; }
+html .navbar .brand {
+  padding: 10px 23px 7px;
+  margin-left: 7px; }
+  html .navbar .brand img {
+    margin-top: -7px;
+    height: 22px; }
+
+.sub-nav {
+  display: block;
+  clear: both;
+  background: #eff2f8;
+  margin: 0;
+  position: relative;
+  left: -10px;
+  width: 100%;
+  padding: 0 35px;
+  height: 39px;
+  box-shadow: 0px 1px 2px rgba(26, 26, 26, 0.39);
+  -webkit-box-shadow: 0px 1px 2px rgba(26, 26, 26, 0.39); }
+
+.sub-nav > li {
+  margin-right: 20px;
+  display: block;
+  float: left; }
+  .sub-nav > li.pull-right {
+    float: right; }
+  .sub-nav > li > a.dropdown-toggle {
+    padding: 10px;
+    text-decoration: none; }
+    .sub-nav > li > a.dropdown-toggle:hover {
+      color: #fff;
+      background: #39a9ed; }
+  .sub-nav > li .dropdown-toggle {
+    display: block;
+    padding: 10px 5px; }
+  .sub-nav > li span.offline-label {
+    color: #FF0000;
+    cursor: pointer; }
+
+html .navbar a.brand, html .navbar .nav > li > a {
+  color: #FFF;
+  text-shadow: none; }
+
+.navbar-fixed-top .navbar-inner {
+  background: #3f5264;
+  box-shadow: none;
+  -webkit-box-shadow: none; }
+
+.navbar .nav > li > a:hover {
+  color: #FFF; }
+
+.navbar .nav li.dropdown.open > .dropdown-toggle, .navbar .nav li.dropdown.active > .dropdown-toggle, .navbar .nav li.dropdown.open.active > .dropdown-toggle {
+  background: transparent; }
+
+.navbar .nav li.dropdown.open > .dropdown-toggle, .navbar .nav li.dropdown.active > .dropdown-toggle, .navbar .nav li.dropdown.open.active > .dropdown-toggle {
+  color: #FFF; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.dropdown-menu {
+  border-radius: 0;
+  -webkit-border-radius: 0;
+  box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  -webkit-box-shadow: 0 0 4px rgba(0, 0, 0, 0.2);
+  border: none; }
+
+.dropdown-submenu > .dropdown-menu {
+  border-radius: 0;
+  -webkit-border-radius: 0; }
+
+html .dropdown-menu li a:hover, html .dropdown-submenu:hover > a {
+  background: #39a9ed; }
+
+.dropdown.new-cell-menu {
+  margin: 10px 0;
+  display: inline-block; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.dashboard.container {
+  padding: 30px 0; }
+  .dashboard.container .new-notebook {
+    margin: 20px 0;
+    display: inline-block; }
+
+.open-notebook-headline {
+  margin-top: 36px; }
+
+.notebook-dashboard-list {
+  margin: 0;
+  list-style: none; }
+  .notebook-dashboard-list .caption {
+    cursor: pointer;
+    font-size: 15px;
+    font-weight: bold; }
+    .notebook-dashboard-list .caption:hover {
+      text-decoration: underline; }
+  .notebook-dashboard-list .session {
+    margin: 10px 0;
+    border: solid 1px #CCC;
+    padding: 20px;
+    border-left: solid 3px #41566a; }
+  .notebook-dashboard-list .path {
+    margin-bottom: -7px; }
+  .notebook-dashboard-list .light {
+    color: #7E7E7E;
+    font-size: 11px;
+    margin-right: 30px; }
+    .notebook-dashboard-list .light span {
+      color: #73be3b; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.evaluator.locked.empty {
+  display: none; }
+
+.advanced-mode .advanced-hide {
+  display: none !important; }
+.advanced-mode .bkcell .CodeMirror {
+  top: -20px;
+  position: relative;
+  margin-bottom: -25px; }
+.advanced-mode bk-output-display pre {
+  position: relative;
+  top: 15px;
+  left: 5px;
+  margin-top: 5px;
+  padding-bottom: 20px; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.bkcell bk-new-cell-menu {
+  display: block; }
+  .bkcell bk-new-cell-menu .dropdown-toggle {
+    opacity: 0;
+    transition: opacity, 300ms; }
+  .bkcell bk-new-cell-menu:hover .dropdown-toggle {
+    opacity: 1; }
+
+bk-new-cell-menu .dropdown-toggle {
+  text-decoration: none; }
+bk-new-cell-menu .shift-right {
+  margin-left: 1px; }
+
+.dropdown-toggle {
+  color: #3f5264;
+  font-size: 13px; }
+
+.locked .toggle-menu {
+  display: none; }
+
+.toggle-menu {
+  top: 20px;
+  right: 20px;
+  z-index: 1;
+  position: absolute; }
+
+.cell-menu-item {
+  float: right;
+  cursor: pointer;
+  height: 24px;
+  padding: 0 15px; }
+
+.cell-status-item {
+  float: right;
+  height: 24px;
+  padding: 0 15px; }
+
+.cell-menu-item.disabled {
+  opacity: 0.3;
+  cursor: not-allowed; }
+
+.cell-menu-item:hover {
+  color: #FFF;
+  background-color: #39a9ed; }
+  .cell-menu-item:hover.delete-cell {
+    background-image: url(/static/v2/images/trash_white@2x.png); }
+  .cell-menu-item:hover.move-cell-up {
+    background-image: url(/static/v2/images/up_white@2x.png); }
+  .cell-menu-item:hover.move-cell-down {
+    background-image: url(/static/v2/images/down_white@2x.png); }
+  .cell-menu-item:hover.expand-contract {
+    background-image: url(/static/v2/images/collapse_white@2x.png); }
+    .cell-menu-item:hover.expand-contract.collapsed {
+      background-image: url(/static/v2/images/expand_white@2x.png); }
+  .cell-menu-item:hover.cell-dropdown {
+    background-image: url(/static/v2/images/menu_white@2x.png); }
+  .cell-menu-item:hover.loading-state .loading-spinner {
+    background-image: url(/static/v2/images/loading_white@2x.png); }
+
+.delete-cell {
+  background: url(/static/v2/images/trash@2x.png) no-repeat center;
+  background-size: 9px; }
+
+.move-cell-up {
+  background: url(/static/v2/images/up@2x.png) no-repeat center;
+  background-size: 8px; }
+
+.move-cell-down {
+  background: url(/static/v2/images/down@2x.png) no-repeat center;
+  background-size: 8px; }
+
+.expand-contract {
+  background: url(/static/v2/images/collapse@2x.png) no-repeat center;
+  background-size: 11px; }
+  .expand-contract.collapsed {
+    background-image: url(/static/v2/images/expand@2x.png); }
+
+.loading-spinner {
+  top: 4px;
+  width: 15px;
+  margin: 0 -10px 0 10px;
+  height: 15px;
+  display: inline-block;
+  position: relative;
+  background-image: url(/static/v2/images/loading@2x.png);
+  background-size: cover; }
+
+.cell-dropdown {
+  background: url(/static/v2/images/menu@2x.png) no-repeat center;
+  background-size: 3px; }
+
+.cell-evaluator-menu {
+  color: #73be3b;
+  cursor: pointer;
+  display: inline-block;
+  font-size: 12px;
+  background: url(/static/v2/images/down@2x.png) no-repeat center right;
+  padding-right: 13px;
+  background-size: 8px; }
+  .cell-evaluator-menu:hover {
+    color: #68ab35; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.outline {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  left: -1px;
+  top: -1px;
+  z-index: 0;
+  padding-bottom: 20px; }
+  .outline.error {
+    border: solid 1px #AF061B; }
+  .outline.warning {
+    border: solid 1px #DBDB55; }
+
+.error-title {
+  color: #AF061B; }
+
+.toggle-error {
+  width: 20px;
+  height: 20px;
+  border: solid 1px;
+  cursor: pointer;
+  display: inline-block;
+  text-align: center;
+  line-height: 18px;
+  margin-right: 10px; }
+
+pre.out_warning {
+  color: #DBDB55;
+  padding: 10px 0;
+  z-index: 1;
+  position: relative; }
+pre.out_error {
+  color: #AF061B;
+  padding: 10px 0;
+  z-index: 1;
+  position: relative; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+bk-code-cell-output .ui-state-default {
+  background: #ebebeb; }
+bk-code-cell-output .slick-header-column, bk-code-cell-output .slick-cell, bk-code-cell-output .slick-headerrow-column {
+  text-align: center;
+  font-family: pt_sansregular; }
+bk-code-cell-output .slick-header-column.ui-state-default {
+  height: 14px; }
+bk-code-cell-output .slick-cell {
+  border-right-color: #CCC;
+  border-right-style: solid;
+  border-bottom-color: #CCC; }
+  bk-code-cell-output .slick-cell.r0 {
+    border-left: solid 1px #CCC; }
+bk-code-cell-output .slick-column-name {
+  margin-left: -9px; }
+bk-code-cell-output .slick-header-column:first-child {
+  border-left: solid 1px #CCC; }
+
+.bkcell {
+  margin-bottom: 10px; }
+  .bkcell .CodeMirror {
+    background: transparent; }
+
+bk-markdown-cell > div {
+  border: solid 1px #CCC;
+  padding-top: 30px;
+  overflow: hidden; }
+
+.mini-cell-stats {
+  top: 22px;
+  left: 20px;
+  color: #7E7E7E;
+  position: absolute;
+  font-size: 12px; }
+
+.loading-state {
+  color: #7E7E7E;
+  font-size: 11px;
+  line-height: 25px; }
+
+.bkcell.code-cell-area, .text-cell {
+  padding: 20px;
+  border: solid 1px #CCC; }
+
+.bkcell bk-code-cell-input-menu .dropdown {
+  float: left;
+  z-index: 99;
+  position: relative;
+  padding-bottom: 20px; }
+
+bk-cell > .bkcell {
+  position: relative; }
+
+bk-section-cell, bk-text-cell {
+  padding: 20px; }
+
+.bkcell bk-code-cell-input-menu .dropdown .dropdown-menu {
+  margin-top: -20px; }
+
+bk-code-cell .code-cell-output {
+  margin: 20px -20px 0px;
+  padding: 0 20px;
+  position: relative;
+  border-top: solid 1px #CCC; }
+  bk-code-cell .code-cell-output.input-hidden {
+    margin-top: 35px; }
+
+.advanced-mode bk-code-cell .code-cell-output {
+  margin-top: 20px; }
+  .advanced-mode bk-code-cell .code-cell-output.no-output .cell-menu-item {
+    display: none; }
+
+.advanced-mode .output-hidden .cell-menu-item {
+  display: none; }
+
+bk-code-cell .locked .code-cell-output {
+  border: none;
+  margin-top: 0; }
+
+bk-output-display .slickgrid {
+  padding-top: 10px; }
+
+bk-output-display pre {
+  border: none;
+  margin: 0;
+  padding: 0;
+  background: transparent; }
+
+.base-menu-add .insert-cell-indicator {
+  padding: 8px 13px; }
+
+.insert-cell-indicator {
+  color: #FFF;
+  cursor: pointer;
+  display: inline-block;
+  padding: 2px 5px 0;
+  font-size: 13px;
+  background: #39a9ed;
+  font-weight: bold;
+  white-space: nowrap; }
+
+.code-cell-hidden {
+  padding-top: 20px; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.depth-indicator {
+  display: none;
+  background: #73be3b;
+  color: #FFF;
+  font-size: 14px;
+  font-weight: bold;
+  text-align: center;
+  height: 23px;
+  line-height: 25px;
+  margin: 0 10px;
+  padding: 0 10px; }
+
+.section > .toggle-menu .advanced-hide, .section > .toggle-menu .move-cell-up, .section > .toggle-menu .move-cell-down {
+  display: none; }
+
+.section0, .section1, .section2, .section3, .section4, .section5 {
+  color: #47474A;
+  font-family: 'pt_sansbold', Helvetica, sans-serif; }
+
+.section-toggle {
+  color: #39a9ed;
+  cursor: pointer;
+  font-size: 16px;
+  font-family: 'pt_sansbold', Helvetica, sans-serif;
+  margin-right: 5px; }
+
+.section0 {
+  font-size: 30px; }
+
+.section1 {
+  font-size: 26px; }
+
+.section2 {
+  font-size: 24px; }
+
+.section3 {
+  font-size: 22px; }
+
+.section4 {
+  font-size: 20px; }
+
+.section5 {
+  font-size: 18px; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+@-webkit-keyframes rotating {
+  from {
+    -webkit-transform: rotate(0deg); }
+
+  to {
+    -webkit-transform: rotate(360deg); } }
+
+.rotating {
+  -webkit-animation: rotating 2s linear infinite; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.hierarchy-mode .mini-cell-stats {
+  left: 104px; }
+.hierarchy-mode .evaluator .depth-indicator, .hierarchy-mode .text-cell .depth-indicator, .hierarchy-mode bk-markdown-cell .depth-indicator {
+  left: 0;
+  position: absolute; }
+.hierarchy-mode .text-cell .depth-indicator {
+  top: 0; }
+.hierarchy-mode .bkcell.code-cell-area, .hierarchy-mode .text-cell, .hierarchy-mode .bk-markdown-cell, .hierarchy-mode bk-markdown-cell > div {
+  margin-left: 84px; }
+.hierarchy-mode .insert-cell-indicator {
+  margin-left: 4px; }
+.hierarchy-mode .depth-indicator {
+  display: inline-block; }
+.hierarchy-mode .section-children {
+  border-left: solid 1px #e6e6e6;
+  margin-left: 10px;
+  padding-left: 54px; }
+.hierarchy-mode .bk-section-title {
+  top: 5px;
+  position: relative; }
+
+.bkcell.code-cell-area, .text-cell {
+  transition: margin 500ms; }
+
+.section-children {
+  margin-left: 0;
+  padding-left: 0;
+  transition: all 500ms; }
+
+/*
+ *  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+ *
+ *  Licensed under the Apache License, Version 2.0 (the "License");
+ *  you may not use this file except in compliance with the License.
+ *  You may obtain a copy of the License at
+ *
+ *         http://www.apache.org/licenses/LICENSE-2.0
+ *
+ *  Unless required by applicable law or agreed to in writing, software
+ *  distributed under the License is distributed on an "AS IS" BASIS,
+ *  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+ *  See the License for the specific language governing permissions and
+ *  limitations under the License.
+ */
+.outputlogbox {
+  overflow: auto; }
+
+.outputlog {
+  vertical-align: top; }
+
+.btn-toolbar {
+  padding: 10px;
+  text-align: center; }
+
+.alt-controls {
+  float: right; }
+
+.outputlogerr, .outputlogout {
+  float: left;
+  width: 50%;
+  display: block;
+  padding: 0 10px;
+  box-sizing: border-box; }
+
+.outputlogbox {
+  height: 200px;
+  overflow: auto; }
+
+.output-label {
+  font-family: pt_sansbold; }
+
+.outputlogcontainer {
+  background-color: #eff2f8;
+  position: fixed;
+  left: 0;
+  width: 100%;
+  z-index: 100;
+  bottom: 0;
+  height: 300px; }
+
+.prelog {
+  border: none;
+  margin: 0 auto;
+  padding: 0;
+  background: transparent;
+  font-family: monospace;
+  border-radius: 0; }
+
+.outputloghandle {
+  background: linear-gradient(#DDE0E6, #EFF2F8, #DDE0E6);
+  border: 1;
+  height: 10px;
+  width: 100%;
+  cursor: ns-resize; }
+
+root {
+  display: block; }
+
+html body {
+  margin: 10px;
+  padding-top: 30px;
+  font-family: 'pt_sansregular', Helvetica, sans-serif; }
+
+ul.cell-output-labels {
+  list-style: none;
+  margin: 0; }
+
+.notebook-container {
+  padding: 0 30px;
+  margin-top: 10px;
+  box-sizing: border-box; }
+
+.locked .cell-output-labels li {
+  padding-top: 0; }
+
+.cell-output-labels li {
+  display: inline-block;
+  padding: 15px 15px 5px 0;
+  font-size: 13px; }
+
+.output_subarea {
+  background: transparent;
+  border: none; }
+
+.bkcell a.evaluate-script {
+  color: black;
+  border: solid 1px #d5d5d5;
+  display: inline-block;
+  padding: 7px 26px;
+  font-size: 13px;
+  margin-top: 20px;
+  background: #f1f1f1; }
+
+.bkcell a.evaluate-script:hover {
+  text-decoration: none; }
+
+.bkcell .CodeMirror {
+  clear: both; }
+
+.CodeMirror-linenumber {
+  text-align: left; }
+
+.CodeMirror-gutters {
+  border: none;
+  background-color: transparent; }
+
+.CodeMirror {
+  height: auto; }
+
+.tschartcontainer {
+  width: 640px;
+  height: 480px; }
+
+a.disabled-link, a.disabled-link:visited, a.disabled-link:active, a.disabled-link:hover {
+  color: #aaa !important; }
+
+.Canvas {
+  font: 10pt Georgia;
+  background-color: #ECECEC;
+  color: #000000;
+  border: solid 1px #CECECE; }
+
+.ObjectBrace {
+  color: #00AA00;
+  font-weight: bold; }
+
+.ArrayBrace {
+  color: #0033FF;
+  font-weight: bold; }
+
+.PropertyName {
+  color: #CC0000;
+  font-weight: bold; }
+
+.String {
+  color: #007777; }
+
+.Number {
+  color: #AA00AA; }
+
+.Boolean {
+  color: #0000FF; }
+
+.Function {
+  color: #AA6633;
+  text-decoration: italic; }
+
+.Null {
+  color: #0000FF; }
+
+.Comma {
+  color: #000000;
+  font-weight: bold; }
+
+PRE.CodeContainer {
+  margin-top: 0px;
+  margin-bottom: 0px; }
+
+PRE.CodeContainer img {
+  cursor: pointer;
+  border: none;
+  margin-bottom: -1px; }
+
+.display-none {
+  display: none; }
+
+.CodeMirror-fullscreen {
+  display: block;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 9999; }
+
+input[type="text"].inputerror {
+  background-color: #FF9B9B; }
+
+input[type="text"].inputok {
+  background-color: #B7F0BE; }
+
+input[type="text"].inputsynced {
+  background-color: #FFFFFF; }
+
+span.red {
+  color: #FF0000; }
+
+.pushright {
+  padding-left: 12px; }
+
+.bk-treeview.ng-enter, .bk-treeview.ng-leave {
+  -webkit-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
+  -moz-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
+  -o-transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s;
+  transition: all cubic-bezier(0.25, 0.46, 0.45, 0.94) 0.2s; }
+
+.bk-treeview.ng-enter {
+  opacity: 0;
+  height: 0%; }
+
+.bk-treeview.ng-enter-active {
+  opacity: 1;
+  height: 100%; }
+
+.bk-treeview.ng-leave {
+  height: 100%;
+  opacity: 1; }
+
+.bk-treeview.ng-leave-active {
+  height: 0%;
+  opacity: 0; }
+
+tree-node {
+  cursor: pointer; }
+
+table.dataTable tbody td {
+  padding: 2px 2px;
+  white-space: nowrap;
+  border-left-style: solid;
+  border-right-style: solid;
+  border-left-width: 1px;
+  border-right-width: 1px;
+  border-left-color: gray;
+  border-right-color: gray; }
+
+.cursor_hand {
+  cursor: pointer; }
+
+.ui-widget {
+  font-size: 0.9em !important; }
+
+.text-white {
+  color: #FFFFFF; }
+
+/** TODO - where should this really go? here? */
+.bk-table-cell-selected {
+  background-color: #d8dbdc; }
+
+/**
+ * Ordering here matters because we'll be both
+ * selected and copied at the same time.
+ * See: http://www.w3.org/TR/CSS21/cascade.html#cascading-order rule #4.
+ */
+.bk-table-copied-cell {
+  /** Transition from the normal selection color.
+	From the example-excel-compatible-spreadsheet.html demo.
+	Seems to look cool. */
+  background-color: #d8dbdc;
+  /** to TS Light Teal */
+  background-color: #cddfd6;
+  -webkit-transition: 0.5s background; }
+
+.CodeMirror-matchingbracket {
+  font-weight: bold; }
+
+/**
+ * Hack for the bootstrap bug where pull-left submenus might have a gap.
+ * Addresses BEAKER-433
+ */
+.dropdown-menu {
+  width: 250px;
+  margin-top: -1px; }
+
+.addeval {
+  padding-top: 10px;
+  padding-bottom: 20px; }
+
+.modal-large {
+  max-height: 800px; }
+
+.text-danger {
+  color: #a94442; }
+
+.nav-btn {
+  color: black;
+  border: solid 1px #d5d5d5;
+  display: inline-block;
+  padding: 2px 12px;
+  font-size: 13px;
+  margin-top: 7px;
+  background: #f1f1f1;
+  line-height: 20px; }
 
 /*!
  *  Font Awesome 4.0.3 by @davegandy - http://fontawesome.io - @fontawesome
