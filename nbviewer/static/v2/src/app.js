@@ -50,10 +50,10 @@
   module.factory("bkCellMenuPluginManager", function() {
     return {
       getPlugin: function() {
-        
+
       },
       getMenuItems: function() {
-        
+
       }
     };
   });
