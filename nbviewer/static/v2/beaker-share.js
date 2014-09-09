@@ -84686,6 +84686,24 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
     'bk.commonUi'
   ]);
 
+  window.beaker = {};
+  window.beaker.bkoDirective = function(name, list) {
+    module.directive("bko" + name, list);
+  };
+  window.beaker.bkoFactory = function(name, list) {
+    module.factory(name, list);
+  };
+  module.factory("bkCellMenuPluginManager", function() {
+    return {
+      getPlugin: function() {
+        
+      },
+      getMenuItems: function() {
+        
+      }
+    };
+  });
+
   module.factory("notebookModel", function() {
     return window.notebookModel;
   });
@@ -84861,6 +84879,14 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
             return display;
           }
         };
+        var dummyPlotModel = {
+          getCellModel: function() {
+            return $scope.cellmodel.output.result;
+          },
+          resetShareMenuItems: function() {
+
+          }
+        };
         $scope.getOutputDisplayModel = function () {
           var display = $scope.cellmodel.output.selectedType;
           if (!display) {
@@ -84868,6 +84894,8 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
           }
           if (display === "BeakerDisplay") {
             return $scope.cellmodel.output.result.object;
+          } else if (display === "Plot" || display === "CombinedPlot") {
+            return dummyPlotModel;
           } else {
             return $scope.cellmodel.output.result;
           }
@@ -84885,7 +84913,7 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
         showSeparator: "@"
       },
       template: '<hr ng-if="showSeparator" /><div ng-include="getType()"></div>',
-      controller: function ($scope, outputDisplayFactory) {
+      controller: ["$scope", "outputDisplayFactory", function ($scope, outputDisplayFactory) {
         var getDefaultType = function (model) {
           var display = outputDisplayFactory.getApplicableDisplays(model)[0];
           if (display === "BeakerDisplay") {
@@ -84901,11 +84929,13 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
         $scope.getType = function () {
           if ($scope.type) {
             return "bko" + $scope.type + ".html";
+          } else if ($scope.model.getCellModel && $scope.model.getCellModel().type === "plot") {
+            return "bkoPlot.html";
           } else {
             return getDefaultType($scope.model);
           }
         };
-      }
+      }]
     };
   });
 
@@ -86650,4 +86680,2984 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
             }
         };
     });
+})();
+
+/*
+*  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+
+(function() {
+  'use strict';
+  var retfunc = function() {
+    var PlotAxis = function(type) {
+      this.axisType = type == null ? "linear" : type; // linear, log, time, nanotime, category
+      this.axisBase = 10;
+      this.axisTime = 0;
+      this.axisTimezone = "America/New_York";
+      this.axisValL = 0;
+      this.axisValR = 1;
+      this.axisValSpan = 1;
+      this.axisPctL = 0;
+      this.axisPctR = 1;
+      this.axisPctSpan = 1;
+      this.axisLabel = "";
+      this.axisCoords = [];
+      this.axisCoordLabels = [];
+      this.axisStep = 1;
+      this.axisFixed = 0;
+    };
+    PlotAxis.prototype.dateIntws = [
+      // milliseconds
+      1, 5, 10, 50, 100, 500,
+      // 1, 5, 10, 30, 60 seconds
+      1000, 5000, 10000, 30000, 60000,
+      // 5, 10, 30, 60 minutes
+      300000, 600000, 1800000, 3600000,
+      // 3, 6, 12, 24 hours
+      3600000 * 3, 3600000 * 6, 3600000 * 12, 3600000 * 24,
+      // 7, 30, 90, 180, 360 days
+      86400000 * 7, 86400000 * 30, 86400000 * 90, 86400000 * 180, 86400000 * 360,
+      // 5, 10, 25, 50, 100 years
+      31104000000 * 5, 31104000000 * 10, 31104000000 * 25, 31104000000 * 50, 31104000000 * 100
+    ];
+    var numIntws = [], numFixs = [];
+    var bs = 1E-6;
+    for (var i = 0; i < 18; i++) {
+      var f = Math.max(6 - i, 0);
+      numIntws = numIntws.concat([1.0 * bs, 2.5 * bs, 5.0 * bs]);  // generate 1s, 5s
+      numFixs = numFixs.concat([f, f + 1, f]);
+      bs *= 10;
+    }
+    PlotAxis.prototype.numIntws = numIntws;
+    PlotAxis.prototype.numFixs = numFixs;
+    PlotAxis.prototype.axisPow = function(pct) {
+      return Math.pow(this.axisBase, pct * this.axisValSpan + this.axisValL);
+    };
+    PlotAxis.prototype.setLabel = function(label) {
+      this.axisLabel = label;
+    };
+    PlotAxis.prototype.setRange = function(vl, vr, para) {
+      if (vl != null) { this.axisValL = vl; }
+      if (vr != null) { this.axisValR = vr; }
+      if (this.axisType === "log") {
+        if (para != null ) { this.axisBase = para; }
+        if (this.axisBase <= 1) {
+          this.axisBase = 10;
+          console.error("cannot set base to <= 1");
+        }
+      } else if (this.axisType === "time"){
+        if (para != null) { this.axisTimezone = para; }
+      }
+      this.axisValSpan = this.axisValR - this.axisValL;
+    };
+    PlotAxis.prototype.setCoords = function(pl, pr, count) {
+      if (pr < pl) {
+        console.error("cannot set right coord < left coord");
+        return;
+      }
+      if (count == null) {
+        console.error("missing setCoords count");
+        count = 1;
+      }
+      this.axisPctL = pl;
+      this.axisPctR = pr;
+      this.axisPctSpan = pr - pl;
+      var span = this.axisPctSpan * this.axisValSpan;
+      var intws, fixs;
+      if (this.axisType === "time") {
+        intws = this.dateIntws;
+        fixs = {};
+      } else {
+        intws = this.numIntws;
+        fixs = this.numFixs;
+      }
+      var w, f, mindiff = 1E100;
+      for (var i = intws.length - 1; i >= 0; i--) {
+        var nowcount = span / intws[i];
+        var diff = Math.abs(nowcount - count);
+        if (diff < mindiff) {
+          mindiff = diff;
+          w = intws[i];
+          f = fixs[i];
+        }
+      }
+      this.axisStep = w;
+      this.axisFixed = f;
+      var val = Math.ceil(this.getValue(pl) / w) * w,
+          valr = this.getValue(pr);
+      var coords = [],
+          labels = [];
+      while(val < valr) {
+        var pct = this.getPercent(val);
+        labels.push(this.getString(pct));
+        coords.push(pct);
+        val += w;
+      }
+      this.axisCoords = coords;
+      this.axisCoordLabels = labels;
+    };
+    PlotAxis.prototype.getType = function() { return this.axisType; };
+    PlotAxis.prototype.getTimezone = function() { return this.axisTimezone; };
+    PlotAxis.prototype.getCoords = function() { return _.without(this.axisCoords); };
+    PlotAxis.prototype.getCoordLabels = function() { return _.without(this.axisCoordLabels); };
+    PlotAxis.prototype.getStep = function() { return this.axisStep; };
+    PlotAxis.prototype.getFixed = function() { return this.axisFixed; };
+    PlotAxis.prototype.getLabel = function() { return this.axisLabel; };
+    PlotAxis.prototype.getPercent = function(val) {
+      if (val < this.axisValL) { val = this.axisValL; }
+      if (val > this.axisValR) { val = this.axisValR; }
+      return (val - this.axisValL) / this.axisValSpan;
+    };
+    PlotAxis.prototype.getValue = function(pct) {
+      if (pct < 0) { pct = 0; }
+      if (pct > 1) { pct = 1; }
+      return this.axisValSpan * pct + this.axisValL;
+    };
+    PlotAxis.prototype.getString = function(pct) {
+      if (this.axisType != "time" && this.axisType != "nanotime") {
+        if (this.axisType === "log") {
+          return "" + this.axisBase + "^" + this.getValue(pct).toFixed(this.axisFixed);
+        } else {
+          return "" + this.getValue(pct).toFixed(this.axisFixed);
+        }
+      }
+      var val = this.getValue(pct);
+      var span = this.axisValSpan * this.axisPctSpan;
+
+      var d, ret = "";
+      if (this.axisType === "time") {
+        d = Math.ceil(val * 1000) / 1000;
+      }
+      else if (this.axisType === "nanotime"){
+        var bval = new Big(val).plus(this.axisOffset).div(1000000);
+        d = new Date(bval.toFixed(0));
+      }
+
+      var padStr = function(val, len) {
+        var str = "" + val;
+        while (str.length < len) str = "0" + str;
+        return str;
+      };
+      if (span <= 1000) {
+        ret = val + "  ";
+        ret = moment(d).tz(this.axisTimezone).format(".SSS") + ( (d - Math.floor(d)).toFixed(this.axisFixed));
+      } else if (span <= 1000 * 60) {
+        ret = moment(d).tz(this.axisTimezone).format("mm:ss.SSS");
+      } else if (span <= 1000 * 60 * 60) {
+        ret = moment(d).tz(this.axisTimezone).format("HH:mm:ss");
+      } else if (span <= 1000) {
+        ret = moment(d).tz(this.axisTimeozne).format("MMM DD ddd, HH:mm");
+      } else if (span <= 1000 * 60 * 60 * 24 * 30) {
+        ret = moment(d).tz(this.axisTimezone).format("MMM DD ddd");
+      } else {
+        ret = moment(d).tz(this.axisTimezone).format("YYYY MMM");
+      }
+
+      /*
+      // Nanoplot TODO
+      if (this.axisType === "nanotime"  && span < 1000000) {
+        var digits = bval.mod(1000000000).toFixed(0);
+        if (span < 1000) {
+          ret += "." + padStr(Math.floor(digits / 1), 9);
+        } else if (span < 1000000) {
+          ret += "." + padStr(Math.floor(digits / 1000), 6);
+        } else {
+          ret += "." + padStr(Math.floor(digits / 1000000), 3);
+        }
+      }
+      */
+      return ret;
+    };
+    return PlotAxis;
+  };
+  beaker.bkoFactory('PlotAxis', [retfunc]);
+})();
+
+
+(function() {
+    'use strict';
+    var retfunc = function(bkUtils) {
+    return {
+      months: ["Jan", "Feb", "Mar", "Apr", "May", "June",
+          "July", "Aug", "Sep", "Oct", "Nov", "Dec"],
+      days: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+      updateDataRangeVal : function(range, dim, val) {
+        var dl = dim + "l", dr = dim + "r";
+        range[dl] = Math.min(range[dl], val);
+        range[dr] = Math.max(range[dr], val);
+      },
+      updateDataRange : function(range, ele) {
+        if (ele.x != null) { this.updateDataRangeVal(range, "x", ele.x); }
+        if (ele.y != null) { this.updateDataRangeVal(range, "y", ele.y); }
+        if (ele.x2 != null) { this.updateDataRangeVal(range, "x", ele.x2); }
+        if (ele.y2 != null) { this.updateDataRangeVal(range, "y", ele.y2); }
+      },
+      getDataRange : function(data) { // data range is in [0,1] x [0,1]
+        var datarange = {
+          xl: 1E100,
+          yl: 1E100,
+          xr: -1E100,
+          yr: -1E100
+        };
+        var visibleData = 0;
+        for (var i = 0; i < data.length; i++) {
+          if (data[i].shown === false) { continue; }
+          visibleData++;
+          var eles = data[i].elements;
+          for (var j = 0; j < eles.length; j++) {
+            this.updateDataRange(datarange, eles[j]);
+          }
+        }
+        if (visibleData === 0) {
+          datarange.xl = datarange.yl = 0;
+          datarange.xr = datarange.yr = 1;
+        }
+        datarange.xspan = datarange.xr - datarange.xl;
+        datarange.yspan = datarange.yr - datarange.yl;
+        return {
+          "datarange" : datarange,
+          "visibleData": visibleData
+        };
+      },
+      getInitFocus : function(model) {
+        var ret = this.getDataRange(model.data);
+        var range = ret.datarange, margin = model.margin;
+        var focus = {
+          xl : model.focus.xl,
+          xr : model.focus.xr,
+          yl : model.focus.yl,
+          yr : model.focus.yr
+        };
+        if (focus.xl == null) {
+          focus.xl = range.xl - range.xspan * margin.left;
+        }
+        if (focus.xr == null) {
+          focus.xr = range.xr + range.xspan * margin.right;
+        }
+        if (focus.yl == null) {
+          focus.yl = range.yl - range.yspan * margin.bottom;
+        }
+        if (focus.yr == null) {
+          focus.yr = range.yr + range.yspan * margin.top;
+        }
+        focus.xspan = focus.xr - focus.xl;
+        focus.yspan = focus.yr - focus.yl;
+        return {
+          "initFocus" : focus,
+          "visibleData" : ret.visibleData
+        };
+      },
+      outsideScr: function(scope, x, y) {
+        var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+        return x < 0 || x > W || y < 0 || y > H;
+      },
+      outsideScrBox: function(scope, x, y, w, h) {
+        var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+        return x > W || x + w < 0 || y > H || y + h < 0;
+      },
+      plotStems: function(scope) {
+        var pipe = scope.rpipeStems;
+        scope.stemg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.stemg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+          .style("stroke-dasharray", function(d) { return d.stroke_dasharray; })
+          .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.stemg.select("#" + pipe[i].id).selectAll("line")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            scope.stemg.select("#" + pipe[i].id).selectAll("line")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("line")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+              .style("stroke-dasharray", function(d) { return d.stroke_dasharray; })
+              .style("stroke-width", function(d) { return d.stroke_width; });
+            scope.stemg.select("#" + pipe[i].id).selectAll("line")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("x1", function(d) { return d.x1; })
+              .attr("x2", function(d) { return d.x2; })
+              .attr("y1", function(d) { return d.y1; })
+              .attr("y2", function(d) { return d.y2; });
+        }
+      },
+      plotLines: function(scope) {
+        var pipe = scope.rpipeLines;
+        scope.lineg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.lineg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-dasharray", function(d) { return d.stroke_dasharray; })
+          .style("stroke-width", function(d) { return d.stroke_width; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.lineg.select("#" + pipe[i].id).selectAll("path")
+              .data([{}]).enter().append("path");
+            scope.lineg.select("#" + pipe[i].id + " path")
+              .attr("d", pipe[i].d);
+        }
+      },
+      plotSegs: function(scope) {
+        var pipe = scope.rpipeSegs;
+        scope.segg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.segg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-dasharray", function(d) { return d.stroke_dasharray; })
+          .style("stroke-width", function(d) { return d.stroke_width; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+        for (var i = 0; i < pipe.length; i++) {
+          scope.segg.select("#" + pipe[i].id).selectAll("line")
+            .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+          scope.segg.select("#" + pipe[i].id).selectAll("line")
+            .data(pipe[i].elements, function(d) { return d.id; }).enter().append("line")
+            .attr("id", function(d) { return d.id; })
+            .attr("class", function(d) { return d.class; })
+            .attr("x1", function(d) { return d.x1; })
+            .attr("x2", function(d) { return d.x2; })
+            .attr("y1", function(d) { return d.y1; })
+            .attr("y2", function(d) { return d.y2; })
+            .style("stroke", function(d) { return d.stroke; })
+            .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+            .style("stroke-dasharray", function(d) { return d.stroke_dasharray; })
+            .style("stroke-width", function(d) { return d.stroke_width; });
+          scope.segg.select("#" + pipe[i].id).selectAll("line")
+            .data(pipe[i].elements, function(d) { return d.id; })
+            .attr("x1", function(d) { return d.x1; })
+            .attr("x2", function(d) { return d.x2; })
+            .attr("y1", function(d) { return d.y1; })
+            .attr("y2", function(d) { return d.y2; });
+        }
+      },
+      plotRects: function(scope) {
+        var pipe = scope.rpipeRects;
+        scope.rectg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.rectg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.rectg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            scope.rectg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("rect")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; })
+              .attr("width", function(d) { return d.width; })
+              .attr("height", function(d) { return d.height; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+            scope.rectg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; })
+              .attr("width", function(d) { return d.width; })
+              .attr("height", function(d) { return d.height; });
+        }
+      },
+      plotDots: function(scope) {
+        var pipe = scope.rpipeDots;
+        scope.dotg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.dotg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .attr("stroke", function(d) { return d.stroke; })
+          //.style("opacity", function(d) { return d.opacity; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.dotg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            scope.dotg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("circle")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .attr("cx", function(d) { return d.cx; })
+              .attr("cy", function(d) { return d.cy; })
+              .attr("r", function(d) { return d.r; })
+              //.attr("opacity", function(d) { return d.opacity; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; });
+            scope.dotg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("cx", function(d) { return d.cx; })
+              .attr("cy", function(d) { return d.cy; })
+              .attr("opacity", function(d) { return d.opacity; });
+        }
+      },
+      plotPointCircles: function(scope) {
+        var pipe = scope.rpipePointCircles;
+        var svg = scope.pointcircleg;
+        svg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        svg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+          .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            svg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            svg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("circle")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .attr("cx", function(d) { return d.cx; })
+              .attr("cy", function(d) { return d.cy; })
+              .attr("r", function(d) { return d.r; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+              .style("stroke-width", function(d) { return d.stroke_width; });
+            svg.select("#" + pipe[i].id).selectAll("circle")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("cx", function(d) { return d.cx; })
+              .attr("cy", function(d) { return d.cy; });
+        }
+      },
+      plotPointDiamonds: function(scope) {
+        var pipe = scope.rpipePointDiamonds;
+        var svg = scope.pointdiamondg;
+        svg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        svg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+          .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            svg.select("#" + pipe[i].id).selectAll("polygon")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            svg.select("#" + pipe[i].id).selectAll("polygon")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("polygon")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+              .style("stroke-width", function(d) { return d.stroke_width; })
+              .attr("points", function(d) { return d.points; });
+            svg.select("#" + pipe[i].id).selectAll("polygon")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("points", function(d) { return d.points; });
+        }
+      },
+      plotPointRects: function(scope) {
+        var pipe = scope.rpipePointRects;
+        var svg = scope.pointrectg;
+        svg.selectAll("g").data(pipe, function(d) { return d.id; }).exit().remove();
+        svg.selectAll("g").data(pipe, function(d) { return d.id; }).enter().append("g")
+            .attr("id", function(d) { return d.id; })
+            .attr("class", function(d) { return d.class; })
+            .style("fill", function(d) { return d.fill; })
+            .style("fill-opacity", function(d) { return d.fill_opacity; })
+            .style("stroke", function(d) { return d.stroke; })
+            .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+            .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            svg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            svg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("rect")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; })
+              .attr("width", function(d) { return d.width; })
+              .attr("height", function(d) { return d.height; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+              .style("stroke-width", function(d) { return d.stroke_width; });
+            svg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; });
+        }
+      },
+      plotBars: function(scope) {
+        var pipe = scope.rpipeBars;
+        scope.barg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.barg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+          .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.barg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+            scope.barg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; }).enter().append("rect")
+              .attr("id", function(d) { return d.id; })
+              .attr("class", function(d) { return d.class; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; })
+              .attr("width", function(d) { return d.width; })
+              .attr("height", function(d) { return d.height; })
+              .style("fill", function(d) { return d.fill; })
+              .style("fill-opacity", function(d) { return d.fill_opacity; })
+              .style("stroke", function(d) { return d.stroke; })
+              .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+              .style("stroke-width", function(d) { return d.stroke_width; });
+            scope.barg.select("#" + pipe[i].id).selectAll("rect")
+              .data(pipe[i].elements, function(d) { return d.id; })
+              .attr("x", function(d) { return d.x; })
+              .attr("y", function(d) { return d.y; })
+              .attr("width", function(d) { return d.width; })
+              .attr("height", function(d) { return d.height; });
+        }
+      },
+      plotUserTexts: function(scope) {
+        var pipe = scope.rpipeUserTexts;
+        scope.textg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.textg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .attr("transform", function(d) { return d.transform; });
+        for (var i = 0; i < pipe.length; i++) {
+          scope.textg.select("#" + pipe[i].id).selectAll("text")
+            .data(pipe[i].elements, function(d) { return d.id; }).exit().remove();
+          scope.textg.select("#" + pipe[i].id).selectAll("text")
+            .data(pipe[i].elements, function(d) { return d.id; }).enter().append("text")
+            .attr("id", function(d) { return d.id; })
+            .attr("class", function(d) { return d.class; })
+            .style("fill", function(d) { return d.fill; })
+            .style("fill-opacity", function(d) { return d.fill_opacity; })
+            .attr("transform", function(d) { return d.transform; })
+            .text(function(d) { return d.text; });
+          scope.textg.select("#" + pipe[i].id).selectAll("text")
+            .data(pipe[i].elements, function(d) { return d.id; })
+            .attr("transform", function(d) { return d.transform; });
+        }
+      },
+      plotRivers: function(scope) {
+        var pipe = scope.rpipeRivers;
+        scope.riverg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).exit().remove();
+        scope.riverg.selectAll("g")
+          .data(pipe, function(d) { return d.id; }).enter().append("g")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .style("fill", function(d) { return d.fill; })
+          .style("fill-opacity", function(d) { return d.fill_opacity; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-opacity", function(d) { return d.stroke_opacity; })
+          .style("stroke-width", function(d) { return d.stroke_width; });
+        for (var i = 0; i < pipe.length; i++) {
+            scope.riverg.select("#" + pipe[i].id).selectAll("polygon")
+              .data([{}]).enter().append("polygon");
+            scope.riverg.select("#" + pipe[i].id+" polygon")
+              .attr("points", pipe[i].elements);
+        }
+      },
+
+      plotCoords: function(scope) {
+        var sel = scope.coordg.selectAll("line");
+        sel.data(scope.rpipeCoords, function(d) { return d.id; }).exit().remove();
+        sel.data(scope.rpipeCoords, function(d) { return d.id; }).enter().append("line")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .attr("x1", function(d) { return d.x1; })
+          .attr("x2", function(d) { return d.x2; })
+          .attr("y1", function(d) { return d.y1; })
+          .attr("y2", function(d) { return d.y2; })
+          .style("stroke", function(d) { return d.stroke; })
+          .style("stroke-dasharray", function(d) { return d.stroke_dasharray; });
+        sel.data(scope.rpipeCoords, function(d) { return d.id; })
+          .attr("x1", function(d) { return d.x1; })
+          .attr("x2", function(d) { return d.x2; })
+          .attr("y1", function(d) { return d.y1; })
+          .attr("y2", function(d) { return d.y2; });
+      },
+
+      plotLabels: function(scope) {   // redraw
+        var pipe = scope.rpipeTexts;
+        scope.labelg.selectAll("text").remove();
+        scope.labelg.selectAll("text")
+          .data(pipe, function(d) { return d.id; }).enter().append("text")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .attr("x", function(d) { return d.x; })
+          .attr("y", function(d) { return d.y; })
+          .attr("transform", function(d) { return d.transform; })
+          .attr("text-anchor", function(d) { return d["text-anchor"]; })
+          .attr("dominant-baseline", function(d) { return d["dominant-baseline"]; })
+          .text(function(d) { return d.text; });
+      },
+      replotSingleCircle: function(scope, d) {
+        scope.svg.selectAll("#" + d.id).remove();
+        scope.svg.selectAll("#" + d.id)
+          .data([d]).enter().append("circle")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .attr("cx", function(d) { return d.cx; })
+          .attr("cy", function(d) { return d.cy; })
+          .attr("r", function(d) { return d.r; })
+          .style("fill", function(d) { return d.color; })
+          .style("stroke", function(d) { return d.stroke; })
+          .attr("opacity", function(d) { return d.opacity; });
+      },
+      replotSingleRect: function(svgElement, d) {
+        svgElement.selectAll("#" + d.id).remove();
+        svgElement.selectAll("#" + d.id)
+          .data([d]).enter().append("rect")
+          .attr("id", function(d) { return d.id; })
+          .attr("class", function(d) { return d.class; })
+          .attr("x", function(d) { return d.x; })
+          .attr("y", function(d) { return d.y; })
+          .attr("width", function(d) { return d.width; })
+          .attr("height", function(d) { return d.height; })
+          .style("fill", function(d) { return d.fill; });
+      },
+      upper_bound: function(a, attr, val) {
+        var l = 0, r = a.length - 1;
+        while (l <= r) {
+          var m = Math.floor((l + r) / 2);
+          if (a[m][attr] >= val) r = m - 1;
+          else l = m + 1;
+        }
+        return r;
+      },
+      randomColor: function() {
+        var rhex6 = Math.floor(Math.random() * Math.pow(16, 6));
+        var s = rhex6.toString(16);
+        while (s.length < 6) s = "0" + s;
+        return "#" + s;
+      },
+      getTipString : function(val, axis) {
+        var type = axis.getType();
+        if (type === "time") {
+          return moment(val).tz(axis.getTimezone()).format("YYYY MMM DD ddd, HH:mm:ss .SSS");
+        }
+        if (typeof(val) === "number") {
+          val = val.toFixed(axis.getFixed());
+        }
+        return "" + val;
+      },
+      getTipStringPercent : function(pct, axis) {
+        var val = axis.getValue(pct);
+        if (axis.getType() === "log") {
+          val = axis.axisPow(pct);
+          return val.toFixed(3);
+        }
+        return this.getTipString(val, axis);
+      }
+
+    };
+  };
+  beaker.bkoFactory('plotUtils', ["bkUtils", retfunc]);
+})();
+
+/*
+*  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+
+(function() {
+  'use strict';
+  var retfunc = function(bkUtils, PlotAxis, plotUtils) {
+    return {
+      dataTypeMap : {
+        "Line" : "line",
+        "Stems" : "stem",
+        "Bars" : "bar",
+        "Area" : "area",
+        "Text" : "text",
+        "Points" : "point",
+        "" : ""
+      },
+      lineStyleMap : {
+        "DEFAULT": "solid",
+        "SOLID" : "solid",
+        "DASH" : "dash",
+        "DOT" : "dot",
+        "DASHDOT" : "dashdot",
+        "LONGDASH" : "longdash",
+        "" : "solid"
+      },
+      lineDasharrayMap : {
+        "solid" : "",
+        "dash" : "9,5",
+        "dot" : "2,2",
+        "dashdot" : "9,5,2,5",
+        "longdash" : "20,5",
+        "" : ""
+      },
+      pointShapeMap : {
+        "DEFAULT" : "rect",
+        "CIRCLE" : "circle",
+        "DIAMOND" : "diamond",
+        "" : "rect"
+      },
+      interpolationMap : {
+        0 : "none",
+        1 : "linear",
+        2 : "linear", // should be "curve" but right now it is not implemented yet
+        "" : "linear"
+      },
+      remapModel : function(model) {
+        // map data entrie to [0, 1] of axis range
+        var vrange = model.vrange;
+        var xAxisLabel = model.xAxis.label,
+            yAxisLabel = model.yAxis.label;
+
+        var xAxis = new PlotAxis(model.xAxis.type),
+            yAxis = new PlotAxis(model.yAxis.type);
+
+        if (xAxis.getType() !== "time") {
+          xAxis.setRange(vrange.xl, vrange.xr, model.xAxis.base);
+        } else {
+          xAxis.setRange(vrange.xl, vrange.xr, model.timezone);
+        }
+        if (yAxis.getType() !== "time") {
+          yAxis.setRange(vrange.yl, vrange.yr, model.yAxis.base);
+        } else {
+          yAxis.setRange(vrange.yl, vrange.yr, model.timezone);
+        }
+
+        if (xAxisLabel != null) {
+          xAxis.setLabel(xAxisLabel);
+        }
+        if (yAxisLabel != null) {
+          yAxis.setLabel(yAxisLabel);
+        }
+        model.xAxis = xAxis;
+        model.yAxis = yAxis;
+
+        var data = model.data;
+        for (var i = 0; i < data.length; i++) {
+          var item = data[i], eles = item.elements;
+          for (var j = 0; j < eles.length; j++) {
+            var ele = eles[j];
+            if (ele.x != null) {
+              ele.x = xAxis.getPercent(ele.x);
+            }
+            if (ele.x2 != null) {
+              ele.x2 = xAxis.getPercent(ele.x2);
+            }
+            if (ele.y != null) {
+              ele.y = yAxis.getPercent(ele.y);
+            }
+            if (ele.y2 != null) {
+              ele.y2 = yAxis.getPercent(ele.y2);
+            }
+          }
+        }
+        var focus = model.focus;
+        if (focus.xl != null) { focus.xl = xAxis.getPercent(focus.xl); }
+        if (focus.xr != null) { focus.xr = xAxis.getPercent(focus.xr); }
+        if (focus.yl != null) { focus.yl = yAxis.getPercent(focus.yl); }
+        if (focus.yr != null) { focus.yr = yAxis.getPercent(focus.yr); }
+      },
+      generateTips : function(model) {
+        var data = model.data;
+        for (var i = 0; i < data.length; i++) {
+          var item = data[i], eles = item.elements;
+          for (var j = 0; j < eles.length; j++) {
+            var ele = eles[j];
+            var txt = "";
+            var valx = plotUtils.getTipString(ele._x, model.xAxis),
+                valy = plotUtils.getTipString(ele._y, model.yAxis);
+            if (item.legend != null) {
+              txt += "<div>" + item.legend + "</div>";
+            }
+            txt += "<div>x: " + valx + "</div><div>y: " + valy + "</div>";
+            if (ele._y2 != null) {
+              var valy2 = plotUtils.getTipString(ele._y2, model.yAxis);
+              txt += "<div>y2: " + valy2 + "</div>";
+            }
+            ele.tip_value = txt;
+          }
+        }
+      },
+      formatModel: function(newmodel, model) {
+        if (newmodel.xCursor != null) {
+          var cursor = newmodel.xCursor;
+          if (cursor.color == null) { cursor.color = "black"; }
+          if (cursor.width == null) { cursor.width = 2; }
+        }
+        var logx = newmodel.xAxis.type === "log",
+            logxb = newmodel.xAxis.base,
+            logy = newmodel.yAxis.type === "log",
+            logyb = newmodel.yAxis.base;
+        // fill in null entries, compute y2, etc.
+        // move some of format SerializedData to formatData?
+        var data = newmodel.data;
+        for (var i = 0; i < data.length; i++) {
+          var item = data[i], eles = item.elements;
+
+          if (eles == null) eles = [];
+
+          item.shown = true;
+
+          if (item.type == null) {
+            item.type = "line";
+          }
+
+          if(item.type === "bar" || item.type === "area") {
+            //newmodel.yPreventNegative = true; // prevent move to y < 0
+          }
+
+          if(item.type === "line" || item.type === "stem") {
+            if (item.style == null) {
+              item.style = "solid";
+            }
+            item.stroke_dasharray = this.lineDasharrayMap[item.style];
+          }
+
+          if(item.type === "line" || item.type === "area") {
+            if (item.interpolation === "curve") {
+            }
+          }
+
+          if (item.type === "line" || item.type === "stem") {
+            if (item.width == null) {
+              item.width = 2;
+            }
+          }
+          if (item.type === "bar" && item.width == null) {
+            item.width = 1;
+          }
+
+          if (item.colorOpacity != null) {
+            item.color_opacity = item.colorOpacity;
+            delete item.colorOpacity;
+          }
+          if (item.outlineColor != null) {
+            item.stroke = item.outlineColor;
+            delete item.outlineColor;
+          }
+          if (item.outlineWidth != null) {
+            item.stroke_width = item.outlineWidth;
+            delete item.outlineWidth;
+          }
+          if (item.outlineOpacity != null) {
+            item.stroke_opacity = item.outlineOpacity;
+            delete item.outlineOpacity;
+          }
+
+          for (var j = 0; j < eles.length; j++) {
+            var ele = eles[j];
+
+            if (ele.outlineColor != null) {
+              ele.stroke = ele.outlineColor;
+              delete ele.outlineColor;
+            }
+            if (ele.outlineWidth != null) {
+              ele.stroke_width = ele.outlineWidth;
+              delete ele.outlineWidth;
+            }
+            if (ele.outlineOpacity != null) {
+              ele.stroke_opacity = ele.outlineOpacity;
+              delete ele.outlineOpacity;
+            }
+
+            if (item.type === "bar") {
+              var w = item.width;
+              ele.x = ele.x - w/2;
+              ele.x2 = ele.x + w/2;
+            }
+            if (item.type === "area" || item.type === "bar" || item.type === "stem") {
+              if (item.y2 == null) {
+                if (item.height != null) {
+                  ele.y2 = ele.y - item.height;
+                } else if (item.base != null) {
+                  ele.y2 = item.base;
+                } else if (item.bases != null) {
+                  ele.y2 = item.bases[j];
+                } else {
+                  ele.y2 = logy ? 1 : 0;
+                }
+              } else {
+                ele.y2 = item.y2[j];
+              }
+            }
+            if (item.type === "point") {
+              if (item.size != null) {
+                ele.size = item.size;
+              } else if (item.sizes != null) {
+                ele.size = item.sizes[j];
+              } else {
+                ele.size = item.style === "rect"? 10 : 5;
+              }
+            }
+
+            if (item.type === "area") {
+              if (item.interpolation == null) {
+                item.interpolation = "linear";
+              }
+            }
+
+            // swap y, y2
+            if (ele.y != null && ele.y2 != null && ele.y < ele.y2) {
+              var temp = ele.y;
+              ele.y = ele.y2;
+              ele.y2 = temp;
+            }
+
+            if (ele.x != null) {
+              ele._x = ele.x;
+              if (logx) {
+                ele.x = Math.log(ele.x) / Math.log(logxb);
+              }
+            }
+            if (ele.x2 != null) {
+              ele._x2 = ele.x2;
+              if (logx) {
+                ele.x2 = Math.log(ele.x2) / Math.log(logxb);
+              }
+            }
+            if (ele.y != null) {
+              ele._y = ele.y;
+              if (logy) {
+                ele.y = Math.log(ele.y) / Math.log(logyb);
+              }
+            }
+            if (ele.y2 != null) {
+              ele._y2 = ele.y2;
+              if (logy) {
+                ele.y2 = Math.log(ele.y2) / Math.log(logyb);
+              }
+            }
+          }
+        }
+        var focus = newmodel.focus;
+        if (logx) {
+          if (focus.xl != null) {
+            focus.xl = Math.log(focus.xl) / Math.log(logxb);
+          }
+          if (focus.xr != null) {
+            focus.xr = Math.log(focus.xr) / Math.log(logxb);
+          }
+        }
+        if (logy) {
+          if (focus.yl != null) {
+            focus.yl = Math.log(focus.yl) / Math.log(logyb);
+          }
+          if (focus.yr != null) {
+            focus.yr = Math.log(focus.yr) / Math.log(logyb);
+          }
+        }
+      },
+
+
+      formatGroovyData : function(newmodel, model) {
+        var yIncludeZero = false;
+        var logx = false, logy = false, logxb, logyb;
+        if (model.rangeAxes != null) {
+          var axis = model.rangeAxes[0];
+          if (axis.auto_range_includes_zero === true) {
+            yIncludeZero = true;
+          }
+          if (axis.use_log === true) {
+            logy = true;
+            logyb = axis.log_base == null ? 10 : axis.log_base;
+          }
+        }
+        if (model.log_x === true) {
+          logx = true;
+          logxb = model.x_log_base;
+        }
+        // set margin
+        newmodel.margin = {};
+        // set axis bound as focus
+        if (model.x_auto_range === false) {
+          if (model.x_lower_bound != null) {
+            newmodel.focus.xl = model.x_lower_bound;
+          }
+          if (model.x_upper_bound != null) {
+            newmodel.focus.xr = model.x_upper_bound;
+          }
+        } else {
+          if (model.x_lower_margin != null) {
+            newmodel.margin.left = model.x_lower_margin;
+          }
+          if (model.x_upper_margin != null) {
+            newmodel.margin.right = model.x_upper_margin;
+          }
+        }
+
+        if (model.rangeAxes != null) {
+          var axis = model.rangeAxes[0];
+          if (axis.auto_range === false) {
+            if (axis.lower_bound != null) {
+              newmodel.focus.yl = axis.lower_bound;
+            }
+            if (axis.upper_bound != null) {
+              newmodel.focus.yr = axis.upper_bound;
+            }
+          } else {
+            if (axis.lower_margin != null) {
+              newmodel.margin.bottom = axis.lower_margin;
+            }
+            if (axis.upper_margin != null) {
+              newmodel.margin.top = axis.upper_margin;
+            }
+          }
+        }
+
+        if (model.crosshair != null) {
+          var color = model.crosshair.color;
+          newmodel.xCursor = {};
+          var cursor = newmodel.xCursor;
+
+          cursor.color_opacity = parseInt(color.substr(1,2), 16) / 255;
+          cursor.color = "#" + color.substr(3);
+
+          var style = model.crosshair.style;
+          if (style == null) style = "";
+          style = this.lineStyleMap[style];
+          cursor.stroke_dasharray = this.lineDasharrayMap[style];
+          cursor.width = model.crosshair.width != null ? model.crosshair.width : 2;
+
+          newmodel.yCursor = {};
+          _.extend(newmodel.yCursor, cursor);
+        }
+
+        // log scaling
+        if (logx) {
+          newmodel.xAxis.type = "log";
+          newmodel.xAxis.base = logxb;
+        } else if (model.type === "TimePlot") {
+          newmodel.xAxis.type = "time";
+        } else if (model.type === "NanoPlot"){  // TODO
+        } else {
+          newmodel.xAxis = "linear";
+        }
+
+        if (logy) {
+          newmodel.yAxis.type = "log";
+          newmodel.yAxis.base = logyb;
+        } else {
+          newmodel.yAxis.type = "linear";
+        }
+
+        var list = model.graphics_list;
+        var numLines = list.length;
+        for (var i = 0; i < numLines; i++) {
+          var item = _.omit(list[i]);
+
+          item.legend = item.display_name;
+          delete item.display_name;
+
+          if (item.color != null) {
+            item.color_opacity = parseInt(item.color.substr(1,2), 16) / 255;
+            item.color = "#" + item.color.substr(3);
+          }
+          if (item.fill != null && item.fill === false) {
+            item.color = "none";
+          }
+          if (item.outline_color != null) {
+            item.stroke_opacity = parseInt(item.outline_color.substr(1,2), 16) / 255;
+            item.stroke = "#" + item.outline_color.substr(3);
+            delete item.outline_color;
+          }
+
+          if (item.type == null) { item.type = ""; }
+          if (item.style == null) { item.style = ""; }
+          if (item.stroke_dasharray == null) { item.stroke_dasharray = ""; }
+          if (item.interpolation == null) { item.interpolation = ""; }
+
+          item.type = this.dataTypeMap[item.type];
+
+          if(item.type === "bar" || item.type === "area") {
+            //newmodel.yPreventNegative = true; // auto range to y = 0
+          }
+
+          if(item.type === "line" || item.type === "stem") {
+            item.style = this.lineStyleMap[item.style];
+            item.stroke_dasharray = this.lineDasharrayMap[item.style];
+          }
+
+          if(item.type === "line" || item.type === "area") {
+            item.interpolation = this.interpolationMap[item.interpolation];
+          }
+
+          if(item.type === "bar") {
+            if (item.width == null) {
+              item.width = 1;
+            }
+          }
+
+          if (item.type === "point") {
+            if (item.shape == null) {
+              item.shape = "DEFAULT";
+            }
+            item.style = this.pointShapeMap[item.shape];
+          }
+
+          var elements = [];
+          var numEles = item.x.length;
+          for (var j = 0; j < numEles; j++) {
+            var ele = {
+              uniqid : i + "_" + j
+            };
+            ele.x = item.x[j];
+            ele.y = item.y[j];
+            if (item.colors != null) {
+              ele.color_opacity = parseInt(item.colors[j].substr(1,2), 16) / 255;
+              ele.color = "#" + item.colors[j].substr(3);
+            }
+            if (item.fills != null && item.fills[j] === false) {
+              ele.color = "none";
+            }
+            if (item.outline_colors != null) {
+              ele.stroke_opacity = parseInt(item.outline_colors[j].substr(1,2), 16) / 255;
+              ele.stroke = "#" + item.outline_colors[j].substr(3);
+            }
+
+            if (item.type === "line" || item.type === "stem") {
+              if (item.styles != null) {
+                var style = item.styles[j];
+                if (style == null) {
+                  style = "";
+                }
+                var shape = this.lineStyleMap[style];
+                ele.stroke_dasharray = this.lineDasharrayMap[shape];
+              }
+            }
+            elements.push(ele);
+          }
+
+          item.elements = elements;
+
+          newmodel.data.push(item);
+        }
+        if(model.constant_lines != null) {
+          for(var i = 0; i < model.constant_lines.length; i++) {
+            var line = model.constant_lines[i];
+            var item = {
+              "type": "constline",
+              "width": line.width != null ? line.width : 1,
+              "color": "black",
+              "elements": []
+            };
+            if (line.color != null) {
+              item.color_opacity = parseInt(line.color.substr(1,2), 16) / 255;
+              item.color = "#" + line.color.substr(3);
+            }
+            var style = line.style;
+            if (style == null) { style = ""; }
+            style = this.lineStyleMap[style];
+            item.stroke_dasharray = this.lineDasharrayMap[style];
+
+            if (line.x != null) {
+              var ele = {"type": "x", "x": line.x};
+            } else if(line.y != null) {
+              var y = line.y;
+              var ele = {"type": "y", "y": y};
+            }
+            item.elements.push(ele);
+            newmodel.data.push(item);
+          }
+        }
+        if (model.constant_bands != null) {
+          for (var i = 0; i < model.constant_bands.length; i++) {
+            var band = model.constant_bands[i];
+            var item = {
+              "type" : "constband",
+              "elements" : []
+            };
+            if (band.color != null) {
+              item.color_opacity = parseInt(band.color.substr(1, 2), 16) / 255;
+              item.color = "#" + band.color.substr(3);
+            }
+            if (band.x != null) {
+              var ele = {
+                "type" : "x",
+                "x" : band.x[0],
+                "x2" : band.x[1]
+              };
+            } else if (band.y != null) {
+              var ele = {
+                "type" : "y"
+              };
+              var y1 = band.y[0], y2 = band.y[1];
+              ele.y = y1;
+              ele.y2 = y2;
+            }
+            item.elements.push(ele);
+            newmodel.data.push(item);
+          }
+        }
+        if (model.texts != null) {
+          for (var i = 0; i < model.texts.length; i++) {
+            var mtext = model.texts[i];
+            var item = {
+              "type" : "text",
+              "color" : mtext.color != null ? mtext.color : "black",
+              "elements" : []
+            };
+            var ele = {
+              "x" : mtext.x,
+              "y" : mtext.y,
+              "v" : mtext.text
+            };
+            item.elements.push(ele);
+            newmodel.data.push(item);
+          }
+        }
+        newmodel.yIncludeZero = yIncludeZero;
+      },
+      cleanupModel : function(model) {
+        for (var i = 0; i < model.data.length; i++) {
+          var item = model.data[i];
+          if (item.x != null) { delete item.x; }
+          if (item.y != null) { delete item.y; }
+          if (item.colors) { delete item.colors; }
+          if (item.sizes) { delete item.sizes; }
+          if (item.bases) { delete item.bases; }
+          if (item.outline_colors) { delete item.outline_colors; }
+        }
+      },
+      standardizeModel : function(_model) {
+        var model = {};
+        $.extend(true, model, _model); // deep copy model to prevent changing the original JSON
+
+        if (model.graphics_list != null) {
+          model.version = "groovy";  // TODO, a hack now to check DS source
+        }
+        if (model.version === "complete") { // skip standardized model in combined plot
+          return model;
+        } else if (model.version === "groovy") {
+        } else {
+          model.version = "direct";
+        }
+        var newmodel;
+        if (model.version === "groovy") {  // model returned from serializer
+          newmodel = {
+            type : "plot",
+            title : model.chart_title != null ? model.chart_title : model.title,
+            margin : {},
+            focus : {},
+            xAxis : {},
+            yAxis : {},
+            xAxisLabel : model.domain_axis_label,
+            yAxisLabel : model.y_label,
+            showLegend : model.show_legend != null ? model.show_legend : false,
+            useToolTip : model.use_tool_tip != null ? model.use_tool_tip : false,
+            initSize : {
+              "width" : model.init_width != null ? model.init_width : 1200,
+              "height" : model.init_height != null ? model.init_height : 350
+            },
+            nanoOffset : null,
+            timezone : model.timezone
+          };
+        } else {
+          newmodel = {
+            showLegend : model.showLegend != null ? model.showLegend : false,
+            useToolTip : model.useToolTip != null ? model.useToolTip : false,
+            xAxis : model.xAxis != null ? model.xAxis : {},
+            yAxis : model.yAxis != null ? model.yAxis : {},
+            margin : model.margin != null ? model.margin : {},
+            range : model.range != null ? model.range : null,
+            focus : model.focus != null ? model.focus : {},
+            xCursor : model.xCursor,
+            yCursor : model.yCursor,
+            initSize : {
+              "width" : model.width != null ? model.width : 1200,
+              "height": model.height != null ? model.height : 350
+            },
+            timezone : model.timezone
+          };
+        }
+
+        newmodel.data = [];
+
+        if (model.version === "groovy") {
+          this.formatGroovyData(newmodel, model);
+        } else {  // DS generated directly
+          _.extend(newmodel, model);
+        }
+        this.formatModel(newmodel, model); // fill in null entries, compute y2, etc.
+
+        // at this point, data is in standard format (log is applied as well)
+
+        var range = plotUtils.getDataRange(newmodel.data).datarange;
+
+        var margin = newmodel.margin;
+        if (margin.bottom == null) { margin.bottom = .05; }
+        if (margin.top == null) { margin.top = .05; }
+        if (margin.left == null) { margin.left = .05; }
+        if (margin.right == null) { margin.right = .05; }
+
+        if (newmodel.vrange == null) {
+          // visible range initially is 10x larger than data range by default
+          newmodel.vrange = {
+            xl : range.xl - range.xspan * 10.0,
+            xr : range.xr + range.xspan * 10.0,
+            yl : range.yl - range.yspan * 10.0,
+            yr : range.yr + range.yspan * 10.0
+          };
+          var vrange = newmodel.vrange;
+
+          if (newmodel.yPreventNegative === true) {
+            vrange.yl = Math.min(0, range.yl);
+          }
+          if (newmodel.yIncludeZero === true) {
+            if (vrange.yl > 0) {
+              vrange.yl = 0;
+            }
+          }
+          var focus = newmodel.focus; // allow user to overide vrange
+          if (focus.xl != null) { vrange.xl = Math.min(focus.xl, vrange.xl); }
+          if (focus.xr != null) { vrange.xr = Math.max(focus.xr, vrange.xr); }
+          if (focus.yl != null) { vrange.yl = Math.min(focus.yl, vrange.yl); }
+          if (focus.yr != null) { vrange.yr = Math.max(focus.yr, vrange.yr); }
+
+          vrange.xspan = vrange.xr - vrange.xl;
+          vrange.yspan = vrange.yr - vrange.yl;
+        }
+
+        this.remapModel(newmodel);
+        this.generateTips(newmodel);
+
+        this.cleanupModel(newmodel);
+        newmodel.version = "complete";
+        console.log(newmodel);
+        return newmodel;
+      }
+    };
+  };
+  beaker.bkoFactory('plotConverter', ["bkUtils", 'PlotAxis', 'plotUtils', retfunc]);
+})();
+
+/*
+*  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+
+
+(function() {
+  'use strict';
+  var retfunc = function(bkUtils, plotConverter) {
+    return {
+      standardizeModel : function(model) {
+        var newmodel = {
+          title : model.title,
+          plots : []
+        };
+        var version;
+        if (model.version === "groovy") {
+          version = "groovy";
+        } else {
+          version = "direct";
+        }
+
+        var width, height;
+        var showLegend, useToolTip;
+        if (version === "groovy") {
+          newmodel.xLabel = model.x_label;
+          newmodel.yLabel = model.y_label;
+          width = model.init_width;
+          height = model.init_height;
+          showLegend = model.show_legend;
+          useToolTip = model.use_tool_tip;
+        } else if (version === "direct"){
+          newmodel.xLabel = model.xLabel;
+          newmodel.yLabel = model.yLabel;
+          width = model.width;
+          height = model.height;
+          showLegend = model.showLegend;
+          useToolTip = model.useToolTip;
+        }
+
+        if (width == null) { width = 1200; }
+        if (height == null) { height = 600; }
+
+        newmodel.initSize = {
+          "width" : width + "px",
+          "height" : height + "px"
+        };
+
+        var plotType = model.plot_type;
+        if (plotType == null) { plotType = "Plot"; }
+
+        var sumweights = 0;
+        var weights = model.weights == null ? [] : model.weights;
+        for(var i = 0; i < model.plots.length; i++) {
+          if(weights[i] == null) { weights[i] = 1; }
+          sumweights += weights[i];
+        }
+        var plots = model.plots;
+        for(var i = 0; i < plots.length; i++) {
+          var plotmodel = plots[i];
+
+          if (plotmodel.version == null) { plotmodel.version = version; }
+          if (plotmodel.showLegend == null) { plotmodel.showLegend = showLegend; }
+          if (plotmodel.useToolTip == null) { plotmodel.useToolTip = useToolTip; }
+
+          plotmodel.type = plotType;
+          var newplotmodel = plotConverter.standardizeModel(plotmodel);
+
+          if(i < plots.length - 1) {  // turn off x coordinate labels
+            newplotmodel.xLabel = null;
+            newplotmodel.xCoordLabel = false;
+          }
+
+          newplotmodel.initSize.width = width + "px";
+          newplotmodel.initSize.height = height * weights[i] / sumweights + "px";
+
+          newmodel.plots.push(newplotmodel);
+        }
+        return newmodel;
+      }
+    };
+  };
+  beaker.bkoFactory('combplotConverter', ["bkUtils", "plotConverter", retfunc]);
+})();
+
+/*
+*  Copyright 2014 TWO SIGMA OPEN SOURCE, LLC
+*
+*  Licensed under the Apache License, Version 2.0 (the "License");
+*  you may not use this file except in compliance with the License.
+*  You may obtain a copy of the License at
+*
+*         http://www.apache.org/licenses/LICENSE-2.0
+*
+*  Unless required by applicable law or agreed to in writing, software
+*  distributed under the License is distributed on an "AS IS" BASIS,
+*  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+*  See the License for the specific language governing permissions and
+*  limitations under the License.
+*/
+
+/*
+ * bkoPlot
+ * This is the output display component for displaying xyChart
+ */
+( function() {
+  'use strict';
+  var retfunc = function(plotUtils, plotConverter, bkCellMenuPluginManager) {
+    var CELL_TYPE = "bko-plot";
+    return {
+      template :
+          "<div id='plotTitle' class='plot-title'></div>" +
+          "<div id='plotContainer' class='plot-renderdiv' oncontextmenu='return false;'>" +
+          "<svg>"  +
+          "<defs>" +
+            "<filter id='svgfilter'>" +
+              "<feOffset result='offOut' in='SourceAlpha' dx='2' dy='2' />" +
+              "<feGaussianBlur result='blurOut' in='offOut' stdDeviation='1' />" +
+              "<feBlend in='SourceGraphic' in2='blurOut' mode='normal' />" +
+            "</filter>" +
+          "</defs>" +
+          "<g id='maing'>" +
+            "<g id='coordg'></g>" +
+            "<g id='lineg'></g> <g id='barg'></g> <g id='riverg'></g> <g id='circleg'></g>" +
+            "<g id='stemg'></g> <g id='segg'></g> <g id='rectg'></g>" +
+            "<g id='pointrectg'></g> <g id='pointcircleg'></g> <g id='pointdiamondg'></g>" +
+            "<g id='textg'></g> <g id='labelg'></g> " +
+          "</g>" +
+          "<g id='interg'>" +
+            "<g id='dotg'></g>" +
+          "</g>" +
+          "</svg>" +
+          "</div>",
+      controller : function($scope) {
+        $scope.getShareMenuPlugin = function() {
+          return bkCellMenuPluginManager.getPlugin(CELL_TYPE);
+        };
+        $scope.$watch("getShareMenuPlugin()", function() {
+          var newItems = bkCellMenuPluginManager.getMenuItems(CELL_TYPE, $scope);
+          $scope.model.resetShareMenuItems(newItems);
+        });
+      },
+      link : function(scope, element, attrs) {
+        // rendering code
+        element.find("#plotContainer").resizable({
+          maxWidth : element.width(), // no wider than the width of the cell
+          minWidth : 450,
+          minHeight: 150,
+          handles : "e, s, se",
+          resize : function(event, ui) {
+            scope.width = ui.size.width;
+            scope.height = ui.size.height;
+            scope.jqsvg.css({"width": scope.width, "height": scope.height});
+            scope.jqplottitle.css({"width": scope.width });
+            scope.numIntervals = {
+              x: scope.width / scope.intervalStepHint.x,
+              y: scope.height / scope.intervalStepHint.y
+            };
+            scope.calcRange();
+            scope.calcMapping(false);
+            scope.emitSizeChange();
+            scope.legendDone = false;
+
+            scope.update();
+          }
+        });
+
+        scope.initLayout = function() {
+          var model = scope.stdmodel;
+
+          element.find(".ui-icon-gripsmall-diagonal-se")
+            .removeClass("ui-icon ui-icon-gripsmall-diagonal-se"); // remove the ugly handle :D
+          scope.container = d3.select(element[0]).select("#plotContainer"); // hook container to use jquery interaction
+          scope.jqcontainer = element.find("#plotContainer");
+          scope.jqcontainer.css(model.initSize);
+          scope.svg = d3.select(element[0]).select("#plotContainer svg");
+          scope.jqsvg = element.find("svg");
+          scope.jqsvg.css(model.initSize);
+
+          $(window).resize(function() {
+            // update resize maxWidth when the browser window resizes
+            var width = element.width();
+            scope.jqcontainer.resizable({
+              maxWidth : width
+            });
+          });
+
+          // set title
+          scope.jqplottitle = element.find("#plotTitle");
+          scope.jqplottitle.text(model.title).css("width", model.initSize.width);
+
+          scope.maing = d3.select(element[0]).select("#maing");
+          scope.coordg = d3.select(element[0]).select("#coordg");
+          scope.labelg = d3.select(element[0]).select("#labelg");
+          scope.lineg = scope.maing.select("#lineg");
+          scope.barg = scope.maing.select("#barg");
+          scope.riverg = scope.maing.select("#riverg");
+          scope.stemg = scope.maing.select("#stemg");
+          scope.circleg = scope.maing.select("#circleg");
+          scope.pointrectg = scope.maing.select("#pointrectg");
+          scope.pointcircleg = scope.maing.select("#pointcircleg");
+          scope.pointdiamondg = scope.maing.select("#pointdiamondg");
+          scope.segg = scope.maing.select("#segg");
+          scope.rectg = scope.maing.select("#rectg");
+          scope.textg = scope.maing.select("#textg");
+
+          scope.interg = d3.select(element[0]).select("#interg");
+          scope.dotg = scope.interg.select("#dotg");
+
+          scope.layout = {    // TODO, specify space for left/right y-axis, also avoid half-shown labels
+            bottomLayoutMargin : 30,
+            topLayoutMargin : 0,
+            leftLayoutMargin : 80,
+            rightLayoutMargin : 0,
+            legendMargin : 10,
+            legendBoxSize : 10
+          };
+          scope.fonts = {
+            labelWidth : 6,
+            labelHeight : 12,
+            tooltipWidth : 10
+          };
+          scope.zoomLevel = {
+            minSpanX : 1E-12,
+            minSpanY : 1E-12,
+            maxScaleX : 1E9,
+            maxScaleY : 1E9
+          };
+          scope.labelPadding = {
+            x : 10,
+            y : 10
+          };
+          scope.intervalStepHint = {
+            x : 150,
+            y : 75
+          };
+          scope.numIntervals = {
+            x: parseInt(model.initSize.width) / scope.intervalStepHint.x,
+            y: parseInt(model.initSize.height) / scope.intervalStepHint.y
+          };
+          scope.locateBox = null;
+          scope.tips = {};
+          scope.cursor = {
+            x : -1,
+            y : -1
+          };
+          scope.showAllLines = true;
+          if (model.xAxis.getLabel() != null) {
+            scope.layout.bottomLayoutMargin += scope.fonts.labelHeight * 2;
+          }
+          if (model.yAxis.getLabel() != null) {
+            scope.layout.leftLayoutMargin += scope.fonts.labelHeight;
+          }
+          scope.$watch("model.getFocus()", function(newFocus) {
+            if (newFocus == null) { return; }
+            scope.focus.xl = newFocus.xl;
+            scope.focus.xr = newFocus.xr;
+            scope.focus.xspan = newFocus.xr - newFocus.xl;
+            scope.calcMapping(false);
+            scope.update();
+          });
+          scope.$watch("model.getWidth()", function(newWidth) {
+            if (scope.width == newWidth) { return; }
+            scope.width = newWidth;
+            scope.jqcontainer.css("width", newWidth );
+            scope.jqsvg.css("width", newWidth );
+            scope.calcMapping(false);
+            scope.legendDone = false;
+            scope.update();
+          });
+        };
+
+        scope.emitSizeChange = function() {
+          if (scope.model.updateWidth != null) {
+            scope.model.updateWidth(scope.width);
+          } // not stdmodel here
+        };
+        scope.calcRange = function() {
+          var ret = plotUtils.getInitFocus(scope.stdmodel);
+          scope.visibleData = ret.visibleData;
+          scope.initFocus = ret.initFocus;
+          scope.fixFocus(scope.initFocus);
+        };
+        scope.initRange = function() {
+          var model = scope.stdmodel;
+          scope.vrange = {
+            xl : 0,
+            xr : 1,
+            yl : 0,
+            yr : 1,
+            xspan : 1,
+            yspan : 1
+          };  // visible range is mapped to [0,1] x [0,1]
+
+          scope.calcRange();
+          scope.focus = {};
+          _.extend(scope.focus, scope.initFocus);
+        };
+        scope.calcCoords = function() {
+          // prepare the coordinates
+          var focus = scope.focus, model = scope.stdmodel;
+          model.xAxis.setCoords(focus.xl, focus.xr, scope.numIntervals.x);
+          model.yAxis.setCoords(focus.yl, focus.yr, scope.numIntervals.y);
+        };
+        scope.renderCoords = function() {
+          var focus = scope.focus, model = scope.stdmodel;
+          var mapX = scope.data2scrX, mapY = scope.data2scrY;
+
+          var xCoords = model.xAxis.getCoords();
+          for (var i = 0; i < xCoords.length; i++) {
+            var x = xCoords[i];
+            scope.rpipeCoords.push({
+              "id" : "coord_x_" + i,
+              "class" : "plot-coord",
+              "x1" : mapX(x),
+              "y1" : mapY(focus.yl),
+              "x2" : mapX(x),
+              "y2" : mapY(focus.yr)
+            });
+          }
+          var yCoords = model.yAxis.getCoords();
+          for (var i = 0; i < yCoords.length; i++) {
+            var y = yCoords[i];
+            scope.rpipeCoords.push({
+              "id" : "coord_y_" + i,
+              "class" : "plot-coord",
+              "x1" : mapX(focus.xl),
+              "y1" : mapY(y),
+              "x2" : mapX(focus.xr),
+              "y2" : mapY(y)
+            });
+          }
+          scope.rpipeCoords.push({
+            "id" : "coord_x_base",
+            "class" : "plot-coord-base",
+            "x1" : mapX(focus.xl),
+            "y1" : mapY(focus.yl),
+            "x2" : mapX(focus.xr),
+            "y2" : mapY(focus.yl)
+          });
+          scope.rpipeCoords.push({
+            "id" : "coord_y_base",
+            "class" : "plot-coord-base",
+            "x1" : mapX(focus.xl),
+            "y1" : mapY(focus.yl),
+            "x2" : mapX(focus.xl),
+            "y2" : mapY(focus.yr)
+          });
+        };
+        scope.filterData = function() {
+          var focus = scope.focus, data = scope.stdmodel.data;
+          scope.fdata = [];
+          var fdata = scope.fdata;
+          for (var i = 0; i < data.length; i++) {
+            var eles = data[i].elements;
+            if (data[i].type === "constline" || data[i].type === "constband" ||
+                data[i].type === "text") {
+              fdata[i] = {
+                "leftIndex" : 0,
+                "rightIndex" : eles.length - 1
+              };
+              continue;
+            }
+            var l = plotUtils.upper_bound(eles, "x", focus.xl);
+            var r = plotUtils.upper_bound(eles, "x", focus.xr);
+
+            if ( data[i].type === "line" || data[i].type === "area") {
+              // cover one more point to the right for line and area
+              r++;
+            } else {
+              // skip the left side element
+              l++;
+            }
+
+            // truncate out-of-sight segment on x-axis
+            l = Math.max(l, 0);
+            r = Math.min(r, eles.length - 1);
+
+            if (l == r && eles[l].x < focus.xl) {
+              // all elements are to the left of the svg
+              l = 0;
+              r = -1;
+            }
+            fdata[i] = {
+              "leftIndex" : l,
+              "rightIndex" : r
+            };
+          }
+        };
+        scope.renderData = function() {
+          var model = scope.stdmodel, data = scope.stdmodel.data, fdata = scope.fdata;
+          var focus = scope.focus, mapX = scope.data2scrX, mapY = scope.data2scrY;
+
+          var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+          var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin,
+              tMargin = scope.layout.topLayoutMargin, rMargin = scope.layout.rightLayoutMargin;
+
+          for (var i = 0; i < data.length; i++) {
+            if (data[i].shown == false) {
+              continue;
+            }
+            var eles = data[i].elements;
+            if (data[i].type === "bar") {
+              var w = data[i].width, sw;
+              var reles = [];
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                var x1 = mapX(p.x), x2 = mapX(p.x2);
+                if (x2 - x1 < 1) x2 = x1 + 1;
+                var y = p.y, y2 = p.y2;
+                y = mapY(y); y2 = mapY(y2);
+                sw = x2 - x1;
+                if (y > y2) { continue; } // prevent negative height
+                var bar = {
+                  "id" : "bar_" + i + "_" + j,
+                  "class" : "plot-resp",
+                  "x" : x1,
+                  "y" : y,
+                  "width" : sw,
+                  "height" : y2 - y,
+                  "fill" : p.color,
+                  "fill_opacity" : p.color_opacity,
+                  "stroke" : p.stroke,
+                  "stroke_width" : p.stroke_width,
+                  "stroke_opacity" : p.stroke_opacity,
+                  "tip_text" : p.tip_value,
+                  "tip_color" : data[i].color,
+                  "tip_x" : x1,
+                  "tip_y" : y
+                };
+                if (p.color != null) { bar.fill = p.color; }
+                if (p.fill_opacity != null) { bar.fill_opaicty = p.fill_opacity; }
+                if (p.stroke != null) { bar.stroke = p.stroke; }
+                if (p.stroke_opacity != null) { bar.stroke_opacity = p.stroke_opacity; }
+                reles.push(bar);
+              }
+              scope.rpipeBars.push({
+                "id" : "bar_" + i,
+                "class" : "plot-bar",
+                "fill" : data[i].color,
+                "fill_opacity": data[i].color_opacity,
+                "stroke": data[i].stroke,
+                "stroke_width": data[i].stroke_width,
+                "stroke_opacity": data[i].stroke_opacity,
+                "elements" : reles
+              });
+            } else if (data[i].type === "area") {
+              var pstr = "", skipped = false;
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                var x = mapX(p.x), y = mapY(p.y);
+                if (Math.abs(x) > 1E6 || Math.abs(y) > 1E6) {
+                  skipped = true;
+                  break;
+                }
+                if (data[i].interpolation === "linear") {
+                  pstr += x + "," + y + " ";
+                } else if (data[i].interpolation === "none" && j < fdata[i].rightIndex) {
+                  var p2 = eles[j + 1];
+                  var x2 = mapX(p2.x);
+                  if (Math.abs(x2) > 1E6) {
+                    skipped = true;
+                    break;
+                  }
+                  pstr += x + "," + y + " " + x2 + "," + y + " ";
+                }
+              }
+              for (var j = fdata[i].rightIndex; j >= fdata[i].leftIndex; j--) {
+                var p = eles[j], x = mapX(p.x), y2 = p.y2 == null ? mapY(focus.yl) : mapY(p.y2);
+                if (Math.abs(y2) > 1E6) { // x is already checked above
+                  skipped = true;
+                  break;
+                }
+                if (data[i].interpolation === "linear") {
+                  pstr += x + "," + y2 + " ";
+                } else if (data[i].interpolation === "none" && j < fdata[i].rightIndex) {
+                  var p2 = eles[j + 1];
+                  var x2 = mapX(p2.x);
+                  pstr += x2 + "," + y2 + " " + x + "," + y2 + " ";
+                }
+              }
+              if (skipped === false) {
+                scope.rpipeRivers.push({
+                  "id" : "river_" + i,
+                  "class" : "plot-river",
+                  "fill" : data[i].color,
+                  "fill_opacity": data[i].color_opacity,
+                  "stroke": data[i].stroke,
+                  "stroke_width": data[i].stroke_width,
+                  "stroke_opacity": data[i].stroke_opacity,
+                  "elements" : pstr
+                });
+              } else {
+                console.error("data not shown due to too large coordinate");
+              }
+            } else if (data[i].type === "stem") {
+              var reles = [];
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                var y2 = p.y2;
+                reles.push({
+                  "id" : "stem_" + i + "_" + j,
+                  "class" : "plot-resp",
+                  "x1" : mapX(p.x),
+                  "y1" : mapY(p.y),
+                  "x2" : mapX(p.x),
+                  "y2" : mapY(p.y2),
+                  "stroke": p.color,
+                  "stroke_opacity": p.color_opacity,
+                  "stroke_dasharray": p.stroke_dasharray,
+                  "stroke_width" : p.width,
+                  "tip_text": p.tip_value,
+                  "tip_color": data[i].color,
+                  "tip_x" : mapX(p.x),
+                  "tip_y" : mapY(p.y)
+                });
+                /*
+                if (data[i].style.search("bottom") != -1) {
+                  var y = y2;
+                  reles.push({
+                    "id" : "stem_b_" + i + "_" + j,
+                    "x1" : mapX(p.x) - 5,
+                    "y1" : mapY(y),
+                    "x2" : mapX(p.x) + 5,
+                    "y2" : mapY(y),
+                    "stroke": p.color,
+                    "stroke_opacity": p.color_opacity,
+                    "stroke_dasharray": p.stroke_dasharray,
+                    "stroke_width" : p.width
+                  });
+                }
+                if (data[i].style.search("top") != -1) {
+                  var y = p.y;
+                  reles.push({
+                    "id" : "stem_t_" + i + "_" + j,
+                    "x1" : mapX(p.x) - 5,
+                    "y1" : mapY(y),
+                    "x2" : mapX(p.x) + 5,
+                    "y2" : mapY(y),
+                    "stroke": p.color,
+                    "stroke_opacity": p.color_opacity,
+                    "stroke_dasharray": p.stroke_dasharray,
+                    "stroke_width" : p.width
+                  });
+                }
+                */
+              }
+              scope.rpipeStems.push({
+                "id" : "stem_" + i,
+                "class" : "plot-stem",
+                "stroke" : data[i].color,
+                "stroke_opacity": data[i].color_opacity,
+                "stroke_width": data[i].width,
+                "stroke_dasharray": data[i].stroke_dasharray,
+                "elements" : reles
+              });
+            } else if (data[i].type === "point") {
+              var reles = [];
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j], s = p.size;
+                var x = mapX(p.x), y = mapY(p.y);
+                var ele = {
+                  "id" : "point_" + i + "_" + j,
+                  "class" : "plot-resp",
+                  "tip_text" : p.tip_value,
+                  "tip_color" : data[i].color,
+                  "tip_x" : x,
+                  "tip_y" : y
+                };
+                if (data[i].style === "circle") {
+                  _.extend(ele, {
+                    "cx" : x,
+                    "cy" : y,
+                    "r" : s
+                  });
+                } else if (data[i].style === "diamond") {
+                  var pstr = "";
+                  pstr += (x - s) + "," + (y    ) + " ";
+                  pstr += (x    ) + "," + (y - s) + " ";
+                  pstr += (x + s) + "," + (y    ) + " ";
+                  pstr += (x    ) + "," + (y + s) + " ";
+                  _.extend(ele, {
+                    "points" : pstr
+                  });
+                } else {
+                  _.extend(ele, {
+                    "x" : x - s / 2,
+                    "y" : y - s / 2,
+                    "width" : s,
+                    "height" : s
+                  });
+                }
+                if (p.color != null) ele.fill = p.color;
+                if (p.color_opacity != null) ele.fill_opacity = p.color_opacity;
+                if (p.stroke != null) ele.stroke = p.stroke;
+                if (p.stroke_opacity != null) ele.stroke_opacity = p.stroke_opacity;
+
+                reles.push(ele);
+              }
+              var pipe;
+              if (data[i].style === "diamond") { pipe = scope.rpipePointDiamonds; }
+              else if (data[i].style === "circle") { pipe = scope.rpipePointCircles; }
+              else pipe = scope.rpipePointRects;
+
+              pipe.push({
+                  "id" : "point_" + i,
+                  "class" : "plot-point",
+                  "fill" : data[i].color,
+                  "fill_opacity": data[i].color_opacity,
+                  "stroke": data[i].stroke,
+                  "stroke_width": data[i].stroke_width,
+                  "stroke_opacity": data[i].stroke_opacity,
+                  "elements" : reles
+              });
+            } else if (data[i].type === "constline") {
+              var reles = [];
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var ele = eles[j];
+                var labelid = "constlabel_" + i + "_" + j;
+                if (ele.type === "x") {
+                  if (ele.x < focus.xl || ele.x > focus.xr) {
+                    scope.jqcontainer.find("#" + labelid).remove();
+                    continue;
+                  }
+                  var x = mapX(ele.x);
+                  reles.push({
+                    "id" : "constline_" + i + "_" + j,
+                    "x1" : x,
+                    "x2" : x,
+                    "y1" : mapY(focus.yl),
+                    "y2" : mapY(focus.yr),
+                    "stroke" : ele.color,
+                    "stroke_opacity" : ele.color_opacity,
+                    "stroke_width" : ele.width,
+                    "stroke_dasharray" : ele.stroke_dasharray
+                  });
+
+                  scope.jqcontainer.find("#" + labelid).remove();
+                  var label = $("<div id=" + labelid + " class='plot-constlabel'></div>")
+                    .appendTo(scope.jqcontainer)
+                    .text(plotUtils.getTipString(ele._x, model.xAxis));
+                  var w = label.outerWidth(), h = label.outerHeight();
+                  label.css({
+                    "left" : x - w / 2,
+                    "top" : H - bMargin - h - scope.labelPadding.y,
+                    "background-color" : data[i].color
+                  });
+                } else if (ele.type === "y") {
+                  if (ele.y < focus.yl || ele.y > focus.yr) {
+                    scope.jqcontainer.find("#" + labelid).remove();
+                    continue;
+                  }
+                  var y = mapY(ele.y);
+                  reles.push({
+                    "id" : "constline_" + i + "_" + j,
+                    "x1" : mapX(focus.xl),
+                    "x2" : mapX(focus.xr),
+                    "y1" : y,
+                    "y2" : y,
+                    "stroke" : ele.color,
+                    "stroke_opacity" : ele.color_opacity,
+                    "stroke_width" : ele.width,
+                    "stroke_dasharray" : ele.stroke_dasharray
+                  });
+                  scope.jqcontainer.find("#" + labelid).remove();
+                  var label = $("<div id=" + labelid + " class='plot-constlabel'></div>")
+                    .appendTo(scope.jqcontainer)
+                    .text(plotUtils.getTipString(ele._y, model.yAxis));
+                  var w = label.outerWidth(), h = label.outerHeight();
+                  label.css({
+                    "left" : lMargin + scope.labelPadding.x,
+                    "top" : y - h / 2,
+                    "background-color" : data[i].color
+                  });
+                }
+              }
+              scope.rpipeSegs.push({
+                "id" : "constline_" + i,
+                "class" : "plot-const",
+                "stroke" : data[i].color,
+                "stroke_opacity": data[i].color_opacity,
+                "stroke_width" : data[i].width,
+                "stroke_dasharray" : data[i].stroke_dasharray,
+                "elements" : reles
+              });
+            } else if (data[i].type === "constband") {
+              var reles = [];
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                var ele = {
+                  "id": "constband_" + i + "_" + j
+                };
+                if (p.type === "x") {
+                  if (p.x > focus.xr || p.x2 < focus.xl) { continue; }
+                  var x = mapX(p.x), x2 = mapX(p.x2);
+                  x = Math.max(x, lMargin);
+                  x2 = Math.min(x2, W - rMargin);
+                  _.extend(ele, {
+                    "x" : x,
+                    "width" : x2 - x,
+                    "y" : tMargin,
+                    "height" : H - bMargin - tMargin,
+                    "opacity" : p.opacity
+                  });
+                } else if (p.type === "y") {
+                  if (p.y > focus.yr || p.y2 < focus.yl) { continue; }
+                  var y = mapY(p.y), y2 = mapY(p.y2); // after mapping, y1,y2 are reversed
+                  y = Math.min(y, H - bMargin);
+                  y2 = Math.max(y2, tMargin);
+                  _.extend(ele, {
+                    "id" : "const_" + i + "_" + j,
+                    "x" : lMargin,
+                    "width" : W - lMargin - rMargin,
+                    "y" : y,
+                    "height" : y2 - y,
+                    "opacity" : p.opacity
+                  });
+                }
+                reles.push(ele);
+              }
+              scope.rpipeRects.push({
+                "id" : "constband_" + i,
+                "class" : "plot-const",
+                "fill" : data[i].color,
+                "fill_opacity": data[i].color_opacity,
+                "stroke": data[i].stroke,
+                "stroke_opacity": data[i].stroke_opacity,
+                "stroke_width": data[i].stroke_width,
+                "elements" : reles
+              });
+            } else if (data[i].type === "text") {
+              var reles = [], dtf = "";
+              if (data[i].rotate != null){
+                dtf = "rotate(" +  data[i].rotate + ")";  // TODO check global rotation
+              }
+              var focus  = scope.focus;
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                if (p.x < focus.xl || p.x > focus.xr || p.y < focus.yl || p.y > focus.yr) {
+                  continue; // text point out of sight
+                }
+                var x = mapX(p.x), y = mapY(p.y);
+                var tf = "";
+                if (p.rotate != null) {
+                  tf = "rotate(" + p.rotate + " " + x + " " + y + ")";
+                }
+                tf += "translate(" + x + "," + y + ")";
+                reles.push({
+                  "id" : "text_" + i + "_" + j,
+                  "text" : p.v,
+                  "transform" : tf,
+                  "fill" : p.color,
+                  "fill_opacity" : p.color_opacity
+                });
+              }
+              scope.rpipeUserTexts.push({
+                "id" : "text_" + i,
+                "class" : "plot-text",
+                "transform" : dtf,
+                "fill" : data[i].color,
+                "fill_opacity" : data[i].color_opacity,
+                "elements" : reles
+              });
+            } else { // standard line: solid, dash or dot
+              var pstr = "", skipped = false;
+              for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+                var p = eles[j];
+                if (j == fdata[i].leftIndex) pstr += "M";
+                else if (j == fdata[i].leftIndex + 1) {
+                  if (data[i].interpolation !== "curve") pstr += "L";
+                  else pstr += "C";
+                }
+                var x = mapX(p.x), y = mapY(p.y);
+                if (Math.abs(x) > 1E6 || Math.abs(y) > 1E6) {
+                  skipped = true;
+                  break;
+                }
+                var nxtp = x + "," + y + " ";
+
+                if (j < fdata[i].rightIndex) {
+                  if (data[i].interpolation === "none") {
+                    var p2 = eles[j + 1];
+                    nxtp += mapX(p.x) + "," + mapY(p.y) + " " + mapX(p2.x) + "," + mapY(p.y) + " ";
+                  } else if (data[i].interpolation === "curve") {
+                    // TODO curve implementation
+                  }
+                }
+                pstr += nxtp;
+              }
+              if (pstr.length > 0 && skipped === false) {
+                var line = {
+                  "id": "line_"+i,
+                  "class": "plot-line",
+                  "stroke": data[i].color,
+                  "stroke_opacity": data[i].color_opacity,
+                  "stroke_width": data[i].width,
+                  "stroke_dasharray": data[i].stroke_dasharray,
+                  "d": pstr
+                };
+                scope.rpipeLines.push(line);
+              } else if (skipped === true) {
+                console.error("data not shown due to too large coordinate");
+              }
+            }
+          }
+        };
+        scope.renderDots = function() {
+          var data = scope.stdmodel.data, fdata = scope.fdata, numLines = data.length, focus = scope.focus;
+          var mapX = scope.data2scrX, mapY = scope.data2scrY;
+          for (var i = 0; i < numLines; i++) {
+            if (data[i].shown === false) {
+              continue;
+            }
+            if (data[i].type !== "line" && data[i].type !== "area") {
+              continue;
+            }
+
+            var eles = data[i].elements;
+            var reles = [];
+            for (var j = fdata[i].leftIndex; j <= fdata[i].rightIndex; j++) {
+              var p = {
+                "x" : mapX(eles[j].x),
+                "y" : mapY(eles[j].y)
+              };
+              if (plotUtils.outsideScr(scope, p.x, p.y)) { continue; }
+              var id = "dot_" + i + "_" + j;
+              reles.push({
+                "id" : id,
+                "class" : "plot-resp",
+                "isResp" : true,
+                "cx" : p.x,
+                "cy" : p.y,
+                "r" : 4,
+                "opacity" : scope.tips[id] == null ? 0 : 1,
+                "point" : _.omit(eles[j], "uniqid"),
+                "tip_text" : eles[j].tip_value,
+                "tip_color" : data[i].color,
+                "tip_x" : p.x,
+                "tip_y" : p.y
+              });
+            }
+            var wrapper = {
+              "id" : "linedots_" + i,
+              "class" : "plot-dot",
+              "stroke" : data[i].color == null ? "gray" : data[i].color,
+              "fill" : "white",
+              "elements" : reles
+            };
+            scope.rpipeDots.push(wrapper);
+          }
+        };
+        scope.prepareInteraction = function(id) {
+          var model = scope.stdmodel;
+          if (model.useToolTip != true) {
+            return;
+          }
+
+          var sel = scope.svg.selectAll(".plot-resp");
+          sel.on("mouseenter", function(d) {
+            return scope.tooltip(d);
+          }).on("mouseleave", function(d) {
+            return scope.untooltip(d);
+          }).on("click", function(d) {
+            return scope.toggleTooltip(d);
+          });
+        };
+        scope.toggleTooltip = function(d) {
+          var id = d.id, nv = !scope.tips[id];
+          if (nv === true) {
+            scope.tooltip(d);
+          } else {
+            scope.tips[id].sticking = !scope.tips[id].sticking;
+            if (scope.tips[id].sticking === false) {
+              scope.untooltip(d);
+            }
+          }
+        };
+        scope.tooltip = function(d) {
+          if (scope.tips[d.id] != null) {
+            return;
+          }
+          scope.tips[d.id] = {};
+          _.extend(scope.tips[d.id], d);
+          var d = scope.tips[d.id];
+          d.sticking = false;
+          d.datax = scope.scr2dataX(d.tip_x);
+          d.datay = scope.scr2dataY(d.tip_y);
+
+          scope.renderTips();
+        };
+        scope.untooltip = function(d) {
+          if (scope.tips[d.id] == null) { return; }
+          if (scope.tips[d.id].sticking === false){
+            delete scope.tips[d.id];
+            scope.jqcontainer.find("#tip_" + d.id).remove();
+            if (d.isResp === true) {
+              scope.jqsvg.find("#" + d.id).attr("opacity", 0);
+            } else {
+              scope.jqsvg.find("#" + d.id).removeAttr("filter");
+            }
+            scope.renderTips();
+          }
+        };
+        scope.renderTips = function() {
+          _.each(scope.tips, function(d) {
+            var p = {
+              "x" : scope.data2scrX(d.datax),
+              "y" : scope.data2scrY(d.datay)
+            };
+            d.scrx = p.x;
+            d.scry = p.y;
+            var tipdiv = scope.jqcontainer.find("#tip_" + d.id);
+            if (tipdiv.length > 0) {
+              var w = tipdiv.width(), h = tipdiv.height();
+              if (plotUtils.outsideScrBox(scope, p.x + d.objw + scope.fonts.tooltipWidth, p.y,
+                w, h)) {
+                tipdiv.remove();
+                return;
+              }
+            }
+            if (tipdiv.length == 0) {
+              tipdiv = $("<div></div>").appendTo(scope.jqcontainer)
+              .attr("id", "tip_" + d.id)
+              .attr("class", "plot-tooltip")
+              .css("border-color", d.tip_color == null ? "gray" : d.tip_color)
+              .append(d.tip_text).mousedown(function(e) {
+                if (e.which == 3) {
+                  if (d.isResp === true) {  // is line responsive dot
+                    scope.jqsvg.find("#" + d.id).attr("opacity", 0);
+                  } else {
+                    scope.jqsvg.find("#" + d.id).removeAttr("filter");
+                  }
+                  delete scope.tips[d.id];
+                  $(this).remove();
+                }
+              });
+            }
+            var objw = scope.jqsvg.find("#" + d.id).attr("width");
+            objw = objw == null ? 0 : parseFloat(objw);
+            d.objw = objw;
+            var w = tipdiv.width(), h = tipdiv.height();
+            if (plotUtils.outsideScrBox(scope, p.x + objw + scope.fonts.tooltipWidth, p.y, w, h)) {
+              tipdiv.remove();
+              return;
+            }
+            tipdiv.draggable({
+              stop : function(event, ui) {
+                d.scrx = ui.position.left - objw - scope.fonts.tooltipWidth;
+                d.scry = ui.position.top;
+                d.datax = scope.scr2dataX(d.scrx);
+                d.datay = scope.scr2dataY(d.scry);
+              }
+            });
+
+            tipdiv
+              .css("left", p.x + objw + scope.fonts.tooltipWidth)
+              .css("top", p.y);
+            if (d.isResp === true) {
+              scope.jqsvg.find("#" + d.id).attr("opacity", 1);
+            } else {
+              scope.jqsvg.find("#" + d.id)
+                .attr("filter", "url(#svgfilter)");
+            }
+          });
+        };
+        scope.renderLabels = function() {
+          var mapX = scope.data2scrX, mapY = scope.data2scrY;
+          var model = scope.stdmodel, ys = model.yScale;
+          var coords, labels;
+          coords = model.xAxis.getCoords();
+          labels = model.xAxis.getCoordLabels();
+          for (var i = 0; i < labels.length; i++) {
+            var x = coords[i];
+            scope.rpipeTexts.push({
+              "id" : "label_x_" + i,
+              "class" : "plot-label",
+              "text" : labels[i],
+              "x" : mapX(x),
+              "y" : mapY(scope.focus.yl) + scope.labelPadding.y,
+              "text-anchor" : "middle",
+              "dominant-baseline" : "hanging"
+            });
+          }
+          coords = model.yAxis.getCoords();
+          labels = model.yAxis.getCoordLabels();
+          for (var i = 0; i < labels.length; i++) {
+            var y = coords[i];
+            scope.rpipeTexts.push({
+              "id" : "label_y_" + i,
+              "class" : "plot-label",
+              "text" : labels[i],
+              //ys.type === "log" ? parseFloat(Math.pow(ys.base, y)).toFixed(2) : y,
+              "x" : mapX(scope.focus.xl) - scope.labelPadding.x,
+              "y" : mapY(y),
+              "text-anchor" : "end",
+              "dominant-baseline" : "central"
+            });
+          }
+          var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin;
+          if (model.xAxis.getLabel() != null) {
+            scope.rpipeTexts.push({
+              "id" : "xlabel",
+              "class" : "plot-xylabel",
+              "text" : model.xAxis.getLabel(),
+              "x" : lMargin + (scope.jqsvg.width() - lMargin) / 2,
+              "y" : scope.jqsvg.height() - scope.fonts.labelHeight
+            });
+          }
+          if (model.yAxis.getLabel() != null) {
+            var x = scope.fonts.labelHeight * 2, y = (scope.jqsvg.height() - bMargin) / 2;
+            scope.rpipeTexts.push({
+              "id" : "ylabel",
+              "class" : "plot-xylabel",
+              "text" : model.yAxis.getLabel(),
+              "x" : x,
+              "y" : y,
+              "transform" : "rotate(-90 " + x + " " + y + ")"
+            });
+          }
+        };
+        scope.renderCursor = function(e) {
+          var x = e.offsetX, y = e.offsetY;
+          var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+          var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin;
+          if (x < lMargin || y > H - bMargin) {
+            scope.svg.selectAll(".plot-cursor").remove();
+            scope.jqcontainer.find(".plot-cursorlabel").remove();
+            return;
+          }
+          var model = scope.stdmodel;
+          var mapX = scope.scr2dataX, mapY = scope.scr2dataY;
+          if (model.xCursor != null) {
+            var opt = model.xCursor;
+            scope.svg.selectAll("#cursor_x").data([{}]).enter().append("line")
+              .attr("id", "cursor_x")
+              .attr("class", "plot-cursor")
+              .style("stroke", opt.color)
+              .style("stroke-opacity", opt.color_opacity)
+              .style("stroke-width", opt.width)
+              .style("stroke-dasharray", opt.stroke_dasharray);
+            scope.svg.select("#cursor_x")
+              .attr("x1", x).attr("y1", 0).attr("x2", x).attr("y2", H - bMargin);
+
+            scope.jqcontainer.find("#cursor_xlabel").remove();
+            var label = $("<div id='cursor_xlabel' class='plot-cursorlabel'></div>")
+              .appendTo(scope.jqcontainer)
+              .text(plotUtils.getTipStringPercent(mapX(x), model.xAxis));
+            var w = label.outerWidth(), h = label.outerHeight();
+            var p = {
+              "x" : x - w / 2,
+              "y" : H - bMargin - scope.labelPadding.y - h
+            };
+            label.css({
+              "left" : p.x ,
+              "top" : p.y ,
+              "background-color" : opt.color != null ? opt.color : "black"
+            });
+          }
+          if (model.yCursor != null) {
+            var opt = model.yCursor;
+            scope.svg.selectAll("#cursor_y").data([{}]).enter().append("line")
+              .attr("id", "cursor_y")
+              .attr("class", "plot-cursor")
+              .style("stroke", opt.color)
+              .style("stroke-opacity", opt.color_opacity)
+              .style("stroke-width", opt.width)
+              .style("stroke-dasharray", opt.stroke_dasharray);
+            scope.svg.select("#cursor_y")
+              .attr("x1", lMargin)
+              .attr("y1", y)
+              .attr("x2", W)
+              .attr("y2", y);
+
+            scope.jqcontainer.find("#cursor_ylabel").remove();
+            var label = $("<div id='cursor_ylabel' class='plot-cursorlabel'></div>")
+              .appendTo(scope.jqcontainer)
+              .text(plotUtils.getTipStringPercent(mapY(y), model.yAxis));
+            var w = label.outerWidth(), h = label.outerHeight();
+            var p = {
+              "x" : lMargin + scope.labelPadding.x,
+              "y" : y - h / 2
+            };
+            label.css({
+              "left" : p.x ,
+              "top" : p.y ,
+              "background-color" : opt.color != null ? opt.color : "black"
+            });
+          }
+        };
+        scope.renderLegends = function() {
+          if (scope.stdmodel.showLegend == false || scope.legendDone == true)
+            return;
+          // legend redraw is controlled by legendDone
+          var data = scope.stdmodel.data, numLines = data.length;
+          var margin = scope.layout.legendMargin;
+
+          scope.jqcontainer.find("#legends").remove();
+
+          scope.legendDone = true;
+          var legend = $("<ul></ul>").appendTo(scope.jqcontainer)
+            .attr("id", "legends")
+            .attr("class", "plot-legendcontainer")
+            .css({
+              "left" : scope.jqcontainer.width() + 10 ,
+              "top" : "0px"
+            });
+
+          if (scope.visibleData > 1) {  // skip "All" check when there is only one line
+            var unit = $("<li></li>").appendTo(legend)
+              .attr("id", "legend_all");
+            $("<input type='checkbox'></input>").appendTo(unit)
+              .attr("id", "legendcheck_all")
+              .attr("class", "plot-legendcheckbox")
+              .prop("checked", true)
+              .click(function(e) {
+                return scope.toggleLine(e);
+              });
+            $("<span></span>").appendTo(unit)
+              .attr("id", "legendbox_all")
+              .attr("class", "plot-legendbox")
+              .css("background-color", "none");
+            $("<span></span>").appendTo(unit)
+              .attr("id", "legendtext_all")
+              .attr("class", "plot-label")
+              .text("All");
+          }
+
+          var content = "";
+          for (var i = 0; i < numLines; i++) {
+            if (data[i].type === "text" || data[i].type === "constline" || data[i].type === "constband") { continue; }
+            if (data[i].legend == null || data[i].legend === "") { continue; }
+            var unit = $("<li></li>").appendTo(legend)
+              .attr("id", "legend_" + i);
+            $("<input type='checkbox'></input>").appendTo(unit)
+              .attr("id", "legendcheck_" + i)
+              .attr("class", "plot-legendcheckbox")
+              .prop("checked", data[i].shown)
+              .click(function(e) {
+                return scope.toggleLine(e);
+              });
+            $("<span></span>").appendTo(unit)
+              .attr("id", "legendbox_" + i)
+              .attr("class", "plot-legendbox")
+              .css("background-color", data[i].color == null? "none" : data[i].color);
+            $("<span></span>").appendTo(unit)
+              .attr("id", "legendtext_" + i)
+              .attr("class", "plot-label")
+              .text(data[i].legend);
+          }
+          legend.draggable();
+        };
+        scope.toggleLine = function(e) {
+          var id = e.target.id.split("_")[1], data = scope.stdmodel.data;
+          // id in the format "legendcheck_i"
+          if (id == "all") {
+            scope.showAllLines = !scope.showAllLines;
+            for (var i = 0; i < data.length; i++) {
+              if (data[i].type === "constline" || data[i].type === "constband"
+                || data[i].type === "text") { continue; }
+              data[i].shown = scope.showAllLines;
+              scope.jqcontainer.find("#legendcheck_" + i).prop("checked", data[i].shown);
+            }
+            scope.calcRange();
+            scope.update();
+            return;
+          }
+          data[id].shown = !data[id].shown;
+          scope.calcRange();
+          scope.update();
+        };
+        scope.renderCoverBox = function() {
+          var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+          plotUtils.replotSingleRect(scope.labelg, {
+            "id" : "coverboxYr",
+            "class" : "plot-coverbox",
+            "x" : 0,
+            "y" : H - scope.layout.bottomLayoutMargin,
+            "width" : W,
+            "height" : scope.layout.bottomLayoutMargin
+          });
+          plotUtils.replotSingleRect(scope.labelg, {
+            "id" : "coverboxYl",
+            "class" : "plot-coverbox",
+            "x" : 0,
+            "y" : 0,
+            "width" : W,
+            "height" : scope.layout.topLayoutMargin
+          });
+          plotUtils.replotSingleRect(scope.labelg, {
+            "id" : "coverboxXl",
+            "class" : "plot-coverbox",
+            "x" : 0,
+            "y" : 0,
+            "width" : scope.layout.leftLayoutMargin,
+            "height" : H
+          });
+          plotUtils.replotSingleRect(scope.labelg, {
+            "id" : "coverboxXr",
+            "class" : "plot-coverbox",
+            "x" : W - scope.layout.rightLayoutMargin,
+            "y" : 0,
+            "width" : scope.layout.rightLayoutMargin,
+            "height" : H
+          });
+
+        };
+        scope.renderLocateBox = function() {
+          scope.svg.selectAll("#locatebox").remove();
+          if (scope.locateBox != null) {
+            var box = scope.locateBox;
+            scope.svg.selectAll("#locatebox").data([{}]).enter().append("rect")
+              .attr("id", "locatebox")
+              .attr("class", "plot-locatebox")
+              .attr("x", box.x)
+              .attr("y", box.y)
+              .attr("width", box.w)
+              .attr("height", box.h);
+          }
+        };
+        scope.calcLocateBox = function() {
+          var p1 = scope.mousep1, p2 = scope.mousep2;
+          var xl = Math.min(p1.x, p2.x), xr = Math.max(p1.x, p2.x),
+              yl = Math.min(p1.y, p2.y), yr = Math.max(p1.y, p2.y);
+          if (xr === xl) { xr = xl + 1; }
+          if (yr === yl) { yr = yl + 1; }
+          scope.locateBox = {
+            "x" : xl,
+            "y" : yl,
+            "w" : xr - xl,
+            "h" : yr - yl
+          };
+        };
+        scope.mouseDown = function() {
+          if (d3.event.target.nodeName === "div") {
+            scope.interactMode = "other";
+            scope.disableZoom();
+            return;
+          }
+          scope.interactMode = d3.event.button == 0 ? "zoom" : "locate";
+        };
+        scope.mouseUp = function() {
+          if (scope.interactMode === "other") {
+            scope.enableZoom();
+            scope.interactMode = "zoom";
+          }
+        };
+        scope.zoomStart = function(d) {
+          if (scope.interactMode === "other") { return; }
+          scope.lastx = scope.lasty = 0;
+          scope.lastscale = 1.0;
+          scope.zoomObj.scale(1.0);
+          scope.zoomObj.translate([0, 0]);
+          scope.mousep1 = {
+            "x" : d3.mouse(scope.svg[0][0])[0],
+            "y" : d3.mouse(scope.svg[0][0])[1]
+          };
+          scope.mousep2 = {};
+          _.extend(scope.mousep2, scope.mousep1);
+        };
+        scope.zooming = function(d) {
+          if (scope.interactMode === "other") {
+            return;
+          }
+          if (scope.interactMode === "zoom") {
+            // left click zoom
+            var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin;
+            var W = scope.jqsvg.width() - lMargin, H = scope.jqsvg.height() - bMargin;
+            var d3trans = d3.event.translate, d3scale = d3.event.scale;
+            var dx = d3trans[0] - scope.lastx, dy = d3trans[1] - scope.lasty,
+                ds = this.lastscale / d3scale;
+            scope.lastx = d3trans[0];
+            scope.lasty = d3trans[1];
+            scope.lastscale = d3scale;
+
+            var focus = scope.focus, vrange = scope.vrange;
+            var mx = d3.mouse(scope.svg[0][0])[0], my = d3.mouse(scope.svg[0][0])[1];
+            if (ds == 1.0) {
+              // translate only
+              var tx = -dx / W * focus.xspan, ty = dy / H * focus.yspan, vrange = scope.vrange;
+              if (focus.xl + tx >= vrange.xl && focus.xr + tx <= vrange.xr) {
+                focus.xl += tx;
+                focus.xr += tx;
+              } else {
+                if (focus.xl + tx < vrange.xl) {
+                  focus.xl = vrange.xl;
+                  focus.xr = focus.xl + focus.xspan;
+                } else if (focus.xr + tx > vrange.xr) {
+                  focus.xr = vrange.xr;
+                  focus.xl = focus.xr - focus.xspan;
+                }
+              }
+              if (focus.yl + ty >= vrange.yl && focus.yr + ty <= vrange.yr) {
+                focus.yl += ty;
+                focus.yr += ty;
+              } else {
+                if (focus.yl + ty < vrange.yl) {
+                  focus.yl = vrange.yl;
+                  focus.yr = focus.yl + focus.yspan;
+                } else if (focus.yr + ty > vrange.yr) {
+                  focus.yr = vrange.yr;
+                  focus.yl = focus.yr - focus.yspan;
+                }
+              }
+              scope.jqsvg.css("cursor", "move");
+            } else {
+              // scale only
+              var level = scope.zoomLevel;
+              if (my <= scope.jqsvg.height() - scope.layout.bottomLayoutMargin) {
+                // scale y
+                var ym = focus.yl + scope.scr2dataYp(my) * focus.yspan;
+                var nyl = ym - ds * (ym - focus.yl), nyr = ym + ds * (focus.yr - ym),
+                    nyspan = nyr - nyl;
+
+                if (nyspan >= level.minSpanY && nyspan <= vrange.yspan * level.maxScaleY) {
+                  focus.yl = nyl;
+                  focus.yr = nyr;
+                  focus.yspan = nyspan;
+                } else {
+                  if (nyspan > vrange.yspan * level.maxScaleY) {
+                    focus.yr = focus.yl + vrange.yspan * level.maxScaleY;
+                  } else if (nyspan < level.minSpanY) {
+                    focus.yr = focus.yl + level.minSpanY;
+                  }
+                  focus.yspan = focus.yr - focus.yl;
+                }
+              }
+              if (mx >= scope.layout.leftLayoutMargin) {
+                // scale x
+                var xm = focus.xl + scope.scr2dataXp(mx) * focus.xspan;
+                var nxl = xm - ds * (xm - focus.xl), nxr = xm + ds * (focus.xr - xm),
+                    nxspan = nxr - nxl;
+                if (nxspan >= level.minSpanX && nxspan <= vrange.xspan * level.maxScaleX) {
+                  focus.xl = nxl;
+                  focus.xr = nxr;
+                  focus.xspan = nxspan;
+                } else {
+                  if (nxspan > vrange.yspan * level.maxScaleX) {
+                    focus.xr = focus.xl + vrange.xspan * level.maxScaleX;
+                  } else if (nxspan < level.minSpanX) {
+                    focus.xr = focus.xl + level.minSpanX;
+                  }
+                  focus.xspan = focus.xr - focus.xl;
+                }
+              }
+              scope.fixFocus(focus);
+            }
+            scope.calcMapping(true);
+            scope.renderCursor({
+              offsetX : mx,
+              offsetY : my
+            });
+            scope.update();
+          } else if (scope.interactMode === "locate") {
+            // right click zoom
+            scope.mousep2 = {
+              "x" : d3.mouse(scope.svg[0][0])[0],
+              "y" : d3.mouse(scope.svg[0][0])[1]
+            };
+            scope.calcLocateBox();
+            scope.rpipeRects = [];
+            scope.renderLocateBox();
+          }
+        };
+        scope.zoomEnd = function(d) {
+          scope.zoomObj.scale(1.0);
+          scope.zoomObj.translate([0, 0]);
+          if (scope.interactMode === "locate") {
+            scope.locateFocus();
+            scope.locateBox = null;
+            scope.update();
+            scope.interactMode = "zoom";
+          }
+          scope.jqsvg.css("cursor", "auto");
+        };
+        scope.fixFocus = function(focus) {
+          var vrange = scope.vrange;
+          focus.xl = focus.xl < 0 ? 0 : focus.xl;
+          focus.xr = focus.xr > 1 ? 1 : focus.xr;
+          focus.yl = focus.yl < 0 ? 0 : focus.yl;
+          focus.yr = focus.yr > 1 ? 1 : focus.yr;
+          focus.xspan = focus.xr - focus.xl;
+          focus.yspan = focus.yr - focus.yl;
+
+          if (focus.xl > focus.xr || focus.yl > focus.yr) {
+            console.error("visible range specified does not match data range, " +
+                "enforcing visible range");
+            _.extend(focus, scope.initFocus);
+          }
+        };
+        scope.resetFocus = function() {
+          var mx = d3.mouse(scope.svg[0][0])[0], my = d3.mouse(scope.svg[0][0])[1];
+          var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin;
+          var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+          if (mx < lMargin && my < H - bMargin) {
+            _.extend(scope.focus, _.pick(scope.initFocus, "yl", "yr", "yspan"));
+          } else if (my > H - bMargin && mx > lMargin) {
+            _.extend(scope.focus, _.pick(scope.initFocus, "xl", "xr", "xspan"));
+          } else {
+            _.extend(scope.focus, scope.initFocus);
+          }
+          scope.fixFocus(scope.focus);
+          scope.calcMapping(true);
+          scope.update();
+        };
+        scope.locateFocus = function() {
+          var box = scope.locateBox;
+          if (box == null)
+            return;
+          var p1 = {
+            "x" : scope.scr2dataXp(box.x),
+            "y" : scope.scr2dataYp(box.y)
+          };
+          var p2 = {
+            "x" : scope.scr2dataXp(box.x + box.w),
+            "y" : scope.scr2dataYp(box.y + box.h)
+          };
+          p1.x = Math.max(0, p1.x);
+          p1.y = Math.max(0, p1.y);
+          p2.x = Math.min(1, p2.x);
+          p2.y = Math.min(1, p2.y);
+
+          var focus = scope.focus, ofocus = {};
+          _.extend(ofocus, scope.focus);
+          focus.xl = ofocus.xl + ofocus.xspan * p1.x;
+          focus.xr = ofocus.xl + ofocus.xspan * p2.x;
+          focus.yl = ofocus.yl + ofocus.yspan * p2.y;
+          focus.yr = ofocus.yl + ofocus.yspan * p1.y;
+          focus.xspan = focus.xr - focus.xl;
+          focus.yspan = focus.yr - focus.yl;
+          scope.calcMapping(true);
+        };
+        scope.resetSvg = function() {
+          scope.jqcontainer.find(".plot-constlabel").remove();
+
+          scope.rpipeLines = [];
+          scope.rpipeCoords = [];
+          scope.rpipeTexts = [];
+          scope.rpipeRects = [];
+          scope.rpipeDots = [];
+          scope.rpipeBars = [];
+          scope.rpipeRivers = [];
+          scope.rpipeStems = [];
+          scope.rpipePointCircles = [];
+          scope.rpipePointRects = [];
+          scope.rpipePointDiamonds = [];
+          scope.rpipeSegs = [];
+          scope.rpipeUserTexts = [];
+        };
+        scope.enableZoom = function() {
+          scope.svg.call(scope.zoomObj.on("zoomstart", function(d) {
+            return scope.zoomStart(d);
+          }).on("zoom", function(d) {
+            return scope.zooming(d);
+          }).on("zoomend", function(d) {
+            return scope.zoomEnd(d);
+          }));
+          scope.svg.on("dblclick.zoom", function() {
+            return scope.resetFocus();
+          });
+        };
+        scope.disableZoom = function() {
+          scope.svg.call(scope.zoomObj.on("zoomstart", null).on("zoom", null).on("zoomend", null));
+        };
+
+        scope.mouseleaveClear = function() {
+          scope.svg.selectAll(".plot-cursor").remove();
+          scope.jqcontainer.find(".plot-cursorlabel").remove();
+        };
+        scope.calcMapping = function(emitFocusUpdate) {
+          // called every time after the focus is changed
+          var focus = scope.focus;
+          var lMargin = scope.layout.leftLayoutMargin, bMargin = scope.layout.bottomLayoutMargin,
+              tMargin = scope.layout.topLayoutMargin, rMargin = scope.layout.rightLayoutMargin;
+          var model = scope.stdmodel;
+          var W = scope.jqsvg.width(), H = scope.jqsvg.height();
+          if (emitFocusUpdate == true && scope.model.updateFocus != null) {
+            scope.model.updateFocus({
+              "xl" : focus.xl,
+              "xr" : focus.xr
+            });
+          }
+
+          scope.data2scrY = d3.scale.linear().domain([focus.yl, focus.yr]).range([H - bMargin, tMargin]);
+          scope.data2scrYp = d3.scale.linear().domain([focus.yl, focus.yr]).range([1, 0]);
+          scope.scr2dataY = d3.scale.linear().domain([tMargin, H - bMargin]).range([focus.yr, focus.yl]);
+          scope.scr2dataYp = d3.scale.linear().domain([tMargin, H - bMargin]).range([1, 0]);
+          scope.data2scrX = d3.scale.linear().domain([focus.xl, focus.xr]).range([lMargin, W-rMargin]);
+          scope.data2scrXp = d3.scale.linear().domain([focus.xl, focus.xr]).range([0, 1]);
+          scope.scr2dataX = d3.scale.linear().domain([lMargin, W-rMargin]).range([focus.xl, focus.xr]);
+          scope.scr2dataXp = d3.scale.linear().domain([lMargin, W-rMargin]).range([0, 1]);
+        };
+        scope.standardizeData = function() {
+          var model = scope.model.getCellModel();
+          scope.stdmodel = plotConverter.standardizeModel(model);
+        };
+        scope.init = function() {
+
+          // first standardize data
+          scope.standardizeData();
+          // create layout elements
+          scope.initLayout();
+
+          scope.resetSvg();
+          scope.zoomObj = d3.behavior.zoom();
+          // set zoom object
+          scope.container.on("mousedown", function() {
+            return scope.mouseDown();
+          }).on("mouseup", function() {
+            return scope.mouseUp();
+          });
+          scope.jqsvg.mousemove(function(e) {
+            return scope.renderCursor(e);
+          }).mouseleave(function(e) {
+            return scope.mouseleaveClear();
+          });
+          scope.enableZoom();
+
+          // init copies focus to initFocus, called only once, create axes
+          scope.initRange();
+
+          scope.calcMapping();
+          scope.update();
+        };
+
+        scope.update = function(first) {
+          scope.resetSvg();
+          scope.filterData();
+          scope.calcCoords();
+          scope.renderCoords();
+          scope.renderData();
+          scope.renderDots();
+          scope.renderLabels();
+          plotUtils.plotCoords(scope);
+          plotUtils.plotRivers(scope);
+          plotUtils.plotBars(scope);
+          plotUtils.plotStems(scope);
+          plotUtils.plotLines(scope);
+          plotUtils.plotDots(scope);
+          plotUtils.plotPointCircles(scope);
+          plotUtils.plotPointRects(scope);
+          plotUtils.plotPointDiamonds(scope);
+          plotUtils.plotSegs(scope);
+          plotUtils.plotRects(scope);
+          plotUtils.plotUserTexts(scope);
+
+          scope.renderTips();
+          scope.renderLocateBox(); // redraw
+          scope.renderLegends(); // redraw
+          scope.renderCoverBox(); // redraw
+          plotUtils.plotLabels(scope); // redraw
+
+          scope.prepareInteraction();
+        };
+        scope.init(); // initialize
+      }
+    };
+  };
+  beaker.bkoDirective("Plot", ["plotUtils", "plotConverter", "bkCellMenuPluginManager", retfunc]);
 })();
