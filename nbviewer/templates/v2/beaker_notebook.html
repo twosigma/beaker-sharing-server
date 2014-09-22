@@ -152,7 +152,12 @@
 </script>
 
 <script>
-  window.notebookModel = {{body}};
+  var notebookModelAsString = JSON.stringify({{body}});
+  if (notebookModelAsString.indexOf("ESCAPE_CLOSING_SCRIPT_TAG_MAGIC_STRING") !== -1) {
+    window.notebookModel = JSON.parse(notebookModelAsString.replace(/ESCAPE_CLOSING_SCRIPT_TAG_MAGIC_STRING/g, "</scr" + "ipt>") );
+  } else {
+    window.notebookModel = {{body}};
+  }
 </script>
 
 </head>
