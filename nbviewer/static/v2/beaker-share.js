@@ -84866,7 +84866,7 @@ moment.tz.add({    "zones": {        "GMT": [              "0 - GMT"        
   module.directive('bkCodeCellOutput', function () {
     return {
       restrict: "E",
-      template: '<bk-output-display model="getOutputDisplayModel()" type="getOutputDisplayType()" show-separator="false"></bk-output-display>',
+      template: '<bk-output-display ng-show="isShowOutput()" model="getOutputDisplayModel()" type="getOutputDisplayType()" show-separator="false"></bk-output-display>',
       link: function ($scope, outputDisplayFactory) {
         $scope.getOutputDisplayType = function () {
           var display = $scope.cellmodel.output.selectedType;
