@@ -383,7 +383,7 @@ class RenderingHandler(BaseHandler):
             app_log.debug("Finished render of %s", download_url)
 
         html = self.render_template(config['template'],
-            body=nbhtml,
+            body=nbhtml.replace("</script>", "ESCAPE_CLOSING_SCRIPT_TAG_MAGIC_STRING"),
             download_url=download_url,
             home_url=home_url,
             date=datetime.utcnow().strftime(date_fmt),
