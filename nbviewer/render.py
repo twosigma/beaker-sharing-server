@@ -22,7 +22,7 @@ def render_notebook(exporter, json_as_string, url=None, forced_theme=None):
     try:
         share_as_object = json.loads(json_as_string)
     except ValueError:
-        raise NotJSONError("Notebook does not appear to be JSON: %r" % json_as_string[:16])
+        raise SyntaxError("Notebook does not appear to be JSON: %r" % json_as_string[:16])
 
     template = None
     if share_as_object.get('notebookModel') and share_as_object.get('cellModel'):
