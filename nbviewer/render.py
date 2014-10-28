@@ -26,13 +26,13 @@ def render_notebook(exporter, json_as_string, url=None, forced_theme=None):
 
     template = None
     if share_as_object.get('notebookModel') and share_as_object.get('cellModel'):
-        template = 'beaker_section.html'
+        template = 'old/beaker_section.html'
     elif share_as_object.get('notebookModel'):
-        template = 'beaker_notebook.html'
+        template = 'old/beaker_notebook.html'
     elif share_as_object.get('cellModel'):
-        template = 'beaker_cell.html'
+        template = 'old/beaker_cell.html'
     elif share_as_object.get('beaker'):
-        template = 'v2/beaker_notebook.html'
+        template = 'beaker_notebook.html'
 
     name = 'Beaker Notebook'
 
