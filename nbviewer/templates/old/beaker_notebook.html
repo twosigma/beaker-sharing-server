@@ -1,0 +1,97 @@
+<!--
+    Copyright 2014 TWO SIGMA INVESTMENTS, LLC
+
+    Licensed under the Apache License, Version 2.0 (the "License");
+    you may not use this file except in compliance with the License.
+    You may obtain a copy of the License at
+
+           http://www.apache.org/licenses/LICENSE-2.0
+
+    Unless required by applicable law or agreed to in writing, software
+    distributed under the License is distributed on an "AS IS" BASIS,
+    WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+    See the License for the specific language governing permissions and
+    limitations under the License.
+-->
+<!DOCTYPE html>
+<html ng-app="notebookShareApp">
+    <head>
+
+        {% include "beaker_head.html" %}
+
+        <script>
+
+        //(function() {
+            var app = angular.module('notebookShareApp', ['M_bkCell_static', 'M_bkNotebookCellModelManager']);
+            var notebookModel = {{body}};
+            app.factory('dataFactory', function() {
+                return {
+                    notebook: notebookModel
+                };
+            });
+            app.directive('container', function() {
+                return {
+                    restrict: 'E',
+                    template: '<bk-notebook></bk-notebook>',
+                    controller: function ($scope, dataFactory) {
+                        $scope.notebook = dataFactory.notebook;
+                    }
+                };
+            });
+            app.directive('bkNotebook', function(bkNotebookCellModelManager) {
+                return {
+                    restrict: 'E',
+                    template: '<div class="bkcell">' +
+                        '<bk-cell ng-repeat="cell in getChildren()" cellmodel="cell" notebookmodel="notebook.notebookModel" evviewmodel="notebook.evViewModel"></bk-cell>' +
+                        '</div>',
+                    controller: function($scope) {
+                        bkNotebookCellModelManager.reset($scope.notebook.notebookModel.cells);
+                        $scope.getChildren = function () {
+                            return bkNotebookCellModelManager.getChildren("root");
+                        };
+                    }
+                };
+            });
+            app.controller('navBarCtrl', function($scope, dataFactory) {
+              $scope.download  = function() {
+                function cleanup(key, value) {
+                  if (key === '$$hashKey')
+                    return undefined;
+                  return value;
+                }
+
+                var data = JSON.stringify(dataFactory.notebook, cleanup, 4) + "\n";
+                var filename = "notebook_" + _(window.location.pathname.split('/')).last() + ".bkr";
+                var blob = new Blob([data], {type: 'text/json'});
+                var e = document.createEvent('MouseEvents');
+                var a = document.createElement('a');
+                a.download = filename;
+                a.href = window.URL.createObjectURL(blob);
+                a.dataset.downloadurl = ['text/json', a.download, a.href].join(':');
+                e.initMouseEvent('click', true, false, window, 0, 0, 0, 0, 0, false, false, false, false, 0, null);
+                a.dispatchEvent(e);
+              };
+              var gistUrl = window.location.pathname.replace("/gist", "https://gist.github.com");
+              $scope.isGist = _.string.startsWith(window.location.pathname, "/gist");
+              $scope.openGist = function() {
+                window.open(gistUrl);
+              };
+            });
+
+        //})();
+        </script>
+
+	{% include "beaker_templates.html" %}
+	{% include "beaker_tracking.html" %}
+
+    </head>
+    <body>
+	{% include "beaker_notebook_header.html" %}
+        <div class="container" style="width: 100%;">
+            <div class="row-fluid">
+                <container></container>
+            </div>
+        </div>
+	{% include "beaker_footer.html" %}
+    </body>
+</html>

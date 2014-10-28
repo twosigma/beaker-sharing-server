@@ -6,6 +6,7 @@
 #-----------------------------------------------------------------------------
 
 import os
+import certifi
 
 from tornado.httpclient import AsyncHTTPClient
 from tornado.httputil import url_concat
@@ -44,6 +45,7 @@ class AsyncGitHubClient(object):
         
         params = {} if params is None else params
         kwargs.setdefault('user_agent', 'Tornado-Async-GitHub-Client')
+        kwargs.setdefault('ca_certs', certifi.where());
         if self.auth:
             params.update(self.auth)
         url = url_concat(url, params)
