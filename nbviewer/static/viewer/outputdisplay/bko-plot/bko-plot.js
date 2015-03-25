@@ -75,7 +75,15 @@
             scope.update();
           }
         });
-
+        
+        scope.resizeFunction = function() {
+          // update resize maxWidth when the browser window resizes
+          var width = element.width();
+          scope.jqcontainer.resizable({
+            maxWidth : width
+          });
+        };
+        
         scope.initLayout = function() {
           var model = scope.stdmodel;
 
@@ -91,13 +99,7 @@
           scope.jqcontainer.css(plotSize);
           scope.jqsvg.css(plotSize);
 
-          $(window).resize(function() {
-            // update resize maxWidth when the browser window resizes
-            var width = element.width();
-            scope.jqcontainer.resizable({
-              maxWidth : width
-            });
-          });
+          $(window).resize(scope.resizeFunction);
 
           // set title
           scope.jqplottitle = element.find("#plotTitle");
@@ -1225,14 +1227,14 @@
           // init remove pipe
           scope.removePipe = [];
 
-	  if(scope.model.getDumpState !== undefined) {
-	      var savedstate = scope.model.getDumpState();
-	      if (savedstate.plotSize !== undefined) {
-		  scope.loadState(savedstate);
-	      } else {
-		  scope.model.setDumpState(scope.dumpState());
-	      }
-	  }
+          if (scope.model.getDumpState !== undefined) {
+            var savedstate = scope.model.getDumpState();
+            if (savedstate !== undefined && savedstate.plotSize !== undefined) {
+              scope.loadState(savedstate);
+            } else {
+              scope.model.setDumpState(scope.dumpState());
+            }
+          }
           scope.calcMapping();
           scope.update();
         };
@@ -1257,21 +1259,34 @@
           scope.clearRemovePipe();
         };
         
-	if(scope.model.getDumpState !== undefined) {
-	    scope.getDumpState = function() {
-		return scope.model.getDumpState();
-	    };
+        if (scope.model.getDumpState !== undefined) {
+          scope.getDumpState = function() {
+            return scope.model.getDumpState();
+          };
         }
 
         scope.init(); // initialize
 
-	if(scope.model.getDumpState !== undefined) {
-	    scope.$watch('getDumpState()', function(result) {
-		    if (result.plotSize === undefined) {
-			scope.model.setDumpState(scope.dumpState());
-		    }
-		});
-	}
+        if (scope.model.getDumpState !== undefined) {
+          scope.$watch('getDumpState()', function(result) {
+            if (result !== undefined && result.plotSize === undefined) {
+              scope.model.setDumpState(scope.dumpState());
+            }
+          });
+        }
+        
+        scope.getCellModel = function() {
+          return scope.model.getCellModel();
+        };
+        scope.$watch('getCellModel()', function() {
+          scope.init();
+        });
+        
+        scope.$on('$destroy', function() {     
+          $(window).off('resize',scope.resizeFunction);
+          scope.svg.selectAll("*").remove();
+        });
+        
       }
     };
   };
