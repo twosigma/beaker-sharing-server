@@ -33,7 +33,33 @@
    */
   module.factory('bkUtils', function(commonUtils, angularUtils, bkTrack, cometdUtils) {
 
+    function endsWith(str, suffix) {
+      return str.indexOf(suffix, str.length - suffix.length) !== -1;
+    }
+    
+    var serverRoot = endsWith(document.baseURI, 'beaker/') ? document.baseURI.substring(0,document.baseURI.length-7): document.baseURI;
+    
+    function serverUrl(path) {
+      return serverRoot + path;
+    }
+
+    var fileRoot = document.baseURI;
+    
+    function fileUrl(path) {
+      return fileRoot + path;
+    }
+
+    // ajax notebook location types should be of the form
+    // ajax:/loading/path:/saving/path
+    function parseAjaxLocator(locator) {
+      var pieces = locator.split(":");
+      return { source: pieces[1], destination: pieces[2] }
+    }
+
     var bkUtils = {
+        serverUrl: serverUrl,
+        fileUrl: fileUrl,
+
       // wrap trackingService
       log: function(event, obj) {
         bkTrack.log(event, obj);
@@ -84,6 +110,31 @@
       httpPost: function(url, data) {
         return angularUtils.httpPost(url, data);
       },
+      spinUntilReady: function(url) {
+        var deferred = angularUtils.newDeferred();
+        var timeRemaining = 30 * 1000;
+        var maxInterval = 1000;
+        var interval = 10;
+        console.log("note: probing until backend is ready, an error here is normal");
+        function spin() {
+          angularUtils.httpGet(url, {}).success(function (r) {
+            deferred.resolve("ok");
+          }).error(function (r) {
+            if (timeRemaining <= 0) {
+              deferred.reject("timeout");
+            } else {
+              interval *= 1.5;
+              if (interval > maxInterval) {
+                interval = maxInterval;
+              }
+              timeRemaining = timeRemaining - interval;
+              angularUtils.timeout(spin, interval);
+            }
+          });
+        }
+        spin();
+        return deferred.promise;
+      },
       newDeferred: function() {
         return angularUtils.newDeferred();
       },
@@ -102,32 +153,41 @@
       timeout: function(func,ms) {
         return angularUtils.timeout(func,ms);
       },
+      cancelTimeout: function(promise) {
+        return angularUtils.cancelTimeout(promise);  
+      },
+      setServerRoot: function(url) {
+        serverRoot = url;
+      },
+      setFileRoot: function(url) {
+        fileRoot = url;
+      },
 
       // beaker server involved utils
       getHomeDirectory: function() {
         var deferred = angularUtils.newDeferred();
-        this.httpGet("../beaker/rest/file-io/getHomeDirectory")
+        this.httpGet(serverUrl("beaker/rest/file-io/getHomeDirectory"))
             .success(deferred.resolve)
             .error(deferred.reject);
         return deferred.promise;
       },
       getVersionInfo: function() {
         var deferred = angularUtils.newDeferred();
-        this.httpGet("../beaker/rest/util/getVersionInfo")
+        this.httpGet(serverUrl("beaker/rest/util/getVersionInfo"))
             .success(deferred.resolve)
             .error(deferred.reject);
         return deferred.promise;
       },
       getStartUpDirectory: function() {
         var deferred = angularUtils.newDeferred();
-        this.httpGet("../beaker/rest/file-io/getStartUpDirectory")
+        this.httpGet(serverUrl("beaker/rest/file-io/getStartUpDirectory"))
             .success(deferred.resolve)
             .error(deferred.reject);
         return deferred.promise;
       },
       getDefaultNotebook: function() {
         var deferred = angularUtils.newDeferred();
-        angularUtils.httpGet("../beaker/rest/util/getDefaultNotebook").
+        angularUtils.httpGet(serverUrl("beaker/rest/util/getDefaultNotebook")).
             success(function(data) {
               deferred.resolve(angular.fromJson(data));
             }).
@@ -145,7 +205,7 @@
       },
       loadFile: function(path) {
         var deferred = angularUtils.newDeferred();
-        angularUtils.httpGet("../beaker/rest/file-io/load", {path: path})
+        angularUtils.httpGet(serverUrl("beaker/rest/file-io/load"), {path: path})
             .success(function(content) {
               if (!_.isString(content)) {
                 // angular $http auto-detects JSON response and deserialize it using a JSON parser
@@ -157,9 +217,24 @@
             .error(deferred.reject);
         return deferred.promise;
       },
+
       loadHttp: function(url) {
         var deferred = angularUtils.newDeferred();
-        angularUtils.httpGet("../beaker/rest/http-proxy/load", {url: url})
+        angularUtils.httpGet(serverUrl("beaker/rest/http-proxy/load"), {url: url})
+            .success(function(content) {
+              if (!_.isString(content)) {
+                // angular $http auto-detects JSON response and deserialize it using a JSON parser
+                // we don't want this behavior, this is a hack to reverse it
+                content = JSON.stringify(content);
+              }
+              deferred.resolve(content);
+            })
+            .error(deferred.reject);
+        return deferred.promise;
+      },
+      loadAjax: function(ajaxLocator) {
+        var deferred = angularUtils.newDeferred();
+        angularUtils.httpGet(parseAjaxLocator(ajaxLocator).source)
             .success(function(content) {
               if (!_.isString(content)) {
                 // angular $http auto-detects JSON response and deserialize it using a JSON parser
@@ -174,11 +249,11 @@
       saveFile: function(path, contentAsJson, overwrite) {
         var deferred = angularUtils.newDeferred();
         if (overwrite) {
-          angularUtils.httpPost("../beaker/rest/file-io/save", {path: path, content: contentAsJson})
+          angularUtils.httpPost(serverUrl("beaker/rest/file-io/save"), {path: path, content: contentAsJson})
               .success(deferred.resolve)
               .error(deferred.reject);
         } else {
-          angularUtils.httpPost("../beaker/rest/file-io/saveIfNotExists", {path: path, content: contentAsJson})
+          angularUtils.httpPost(serverUrl("beaker/rest/file-io/saveIfNotExists"), {path: path, content: contentAsJson})
               .success(deferred.resolve)
               .error(function(data, status, header, config) {
                 if (status === 409) {
@@ -192,6 +267,17 @@
         }
 
         return deferred.promise;
+      },
+      saveAjax: function(ajaxLocator, contentAsJson) {
+        var deferred = angularUtils.newDeferred();
+        var destination = parseAjaxLocator(ajaxLocator).destination;
+        angularUtils.httpPutJson(destination, {data: contentAsJson})
+          .success(deferred.resolve)
+          .error(deferred.reject);
+        return deferred.promise;
+      },
+      initializeCometd: function(uri) {
+        return cometdUtils.initializeCometd(uri);
       },
       addConnectedStatusListener: function(cb) {
         return cometdUtils.addConnectedStatusListener(cb);

@@ -77,6 +77,13 @@
           headers: {'Content-Type': 'application/x-www-form-urlencoded'}
         });
       },
+      httpPutJson: function(url, data) {
+        return $http({
+          method: "PUT",
+          url: url,
+          data: data
+        });
+      },
       newDeferred: function() {
         return $q.defer();
       },
@@ -98,7 +105,10 @@
         return deferred.promise;
       },
       timeout: function (func, ms) {
-        $timeout(func, ms);
+        return $timeout(func, ms);
+      },
+      cancelTimeout: function(promise) {
+        $timeout.cancel(promise);
       },
       delay: function(ms) {
         var deferred = $q.defer();
