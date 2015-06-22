@@ -46,6 +46,9 @@
     window.bkHelper = {
         getNotebookModel: function() {
           return window.notebookModel;
+        },
+        getBeakerObject: function() {
+          return window.notebookModel.namespace;
         }
     };
     window.beaker = {};
@@ -80,6 +83,12 @@
         };
     });
 
+    module.factory('bkEvaluateJobManager', function() {
+      return {
+        isCancellable: function() { return false; }
+      };
+    });
+    
     module.factory("notebookModel", function() {
         return window.notebookModel;
     });
@@ -123,6 +132,9 @@
                 };
                 scope.isLocked = function() {
                     return notebookModel.locked;
+                };
+                scope.isShowOutput = function() {
+                  return !cellmodel.output.hidden;
                 };
             }
         };
@@ -264,6 +276,10 @@
                     "Kdb": { bgColor: "#005e99", fgColor: "#FFFFFF", borderColor: "", shortName: "K" }
                     };
                 
+                scope.isLocked = function() {
+                  return notebookModel.locked;
+                };
+
                 scope.isShowInput = function() {
                     if (isLocked()) {
                         return false;
@@ -350,7 +366,10 @@
             link: function($scope, outputDisplayFactory) {
               
               $scope.getOutputResult = function() {
-                return $scope.cellmodel.output.result;
+                if ($scope.cellmodel !== undefined)
+                  return $scope.cellmodel.output.result;
+                if ($scope.$parent.cellmodel)
+                  return $scope.$parent.cellmodel.output.result;
               };
 
               var dummy = {};
@@ -404,7 +423,8 @@
                 $scope.type = $scope.getOutputDisplayType();
                 
                 $scope.isShowOutput = function() {
-                  return $scope.$parent.isShowOutput();
+                  if ($scope.$parent!== undefined && $scope.$parent.isShowOutput !== undefined)
+                    return $scope.$parent.isShowOutput();
                 };
               
             }
