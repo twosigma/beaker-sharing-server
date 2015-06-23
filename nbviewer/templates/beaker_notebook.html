@@ -147,15 +147,17 @@
 
     </head>
     <body>
-        <div id='menubar' class="navbar navbar-fixed-top"  ng-controller="navBarCtrl" style="background-color: buttonface; margin-bottom: 5px; min-height: 60px;">
-            <div class="container-fluid">
-                <div class="nav-collapse">
-                    <a class="navbar-brand" href="http://beakernotebook.com">
+        <div id='menubar' class="navbar navbar-fixed-top"  ng-controller="navBarCtrl" style="background: #3f5264;">
+	    <div class="navbar-inner">
+                <div class="container-fluid">
+                    <a class="navbar-brand" style="height: 55px; color: white;" href="http://beakernotebook.com">
                         <img src="images/beaker_icon@2x.png"></img>
+                    </a>
+                    <a class="navbar-left" style="font-size: 22px; margin-top: 18px; color: white;" href="http://beakernotebook.com">
                         Beaker - The data scientist's laboratory
                     </a>
-                    <button ng-if="isGist" class="pull-right" ng-click="openGist()">Open gist</button>
-                    <button class="pull-right" ng-click="download()">Download notebook</button>
+                    <button ng-if="isGist" class="btn pull-right" style="margin: 15px" ng-click="openGist()">Open gist</button>
+                    <button class="btn pull-right" style="margin: 15px" ng-click="download()">Download notebook</button>
                 </div>
             </div>
         </div>
