@@ -13,7 +13,10 @@
     See the License for the specific language governing permissions and
     limitations under the License.
 -->
- 
+#Status
+
+This repositiory is outdated and no longer used by Beaker.
+
 #Provenance
 
 This is a fork of https://github.com/ipython/nbviewer
