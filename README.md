@@ -16,6 +16,7 @@
 #Status
 
 This repositiory is outdated and no longer used by Beaker.
+It has been replaced by the free [publication service](https://pub.beakernotebook.com/).
 
 #Provenance
 
